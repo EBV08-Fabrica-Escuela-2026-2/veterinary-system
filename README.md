@@ -46,6 +46,12 @@ Para levantar la base de datos:
 | GET | `/api/catalogo` | Lista todos los veterinarios con sus servicios |
 | GET | `/api/catalogo/veterinarios/{id}` | Detalle de un veterinario |
 
+### Clientes
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/clientes` | Registra un nuevo cliente |
+
 ### Autenticación
 
 | Método | Ruta | Descripción |
@@ -63,10 +69,10 @@ Para levantar la base de datos:
 ```
 src/main/java/com/veterinaria/
 ├── config/           # SecurityConfig
-├── controller/       # AuthController, CatalogoController
+├── controller/       # AuthController, CatalogoController, ClienteController
 ├── dto/              # Request/Response DTOs
 ├── exception/        # GlobalExceptionHandler, ResourceNotFoundException
-├── model/            # Veterinario, Servicio
+├── model/            # Veterinario, Servicio, Cliente
 ├── repository/       # JPA Repositories
 ├── service/          # CatalogoService + impl
 └── util/             # COPCurrencyFormat
