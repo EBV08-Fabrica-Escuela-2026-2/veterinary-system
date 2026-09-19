@@ -1,6 +1,6 @@
 # Veterinaria API
 
-Backend REST para el sistema de gestión veterinaria desarrollado en la Fábrica Escuela 2026-2. Actualmente permite consultar el catálogo de veterinarios, registrar clientes y servicios, y registrar o consultar las mascotas asociadas a un cliente.
+Backend REST para el sistema de gestión veterinaria desarrollado en la Fábrica Escuela 2026-2. Actualmente permite consultar el catálogo, registrar veterinarios, clientes y servicios, y registrar o consultar las mascotas asociadas a un cliente.
 
 ## Tecnologías
 
@@ -41,11 +41,12 @@ Antes de iniciar la aplicación, cree la base de datos y ejecute en orden los sc
 
 ```bash
 psql -U postgres -d veterinaria -f src/main/resources/db/migration/V1__create_tables_and_seed_data.sql
+psql -U postgres -d veterinaria -f src/main/resources/db/migration/V2__add_documento_correo_veterinario.sql
 psql -U postgres -d veterinaria -f src/main/resources/db/migration/V3__create_cliente.sql
 psql -U postgres -d veterinaria -f src/main/resources/db/migration/V4__create_mascota.sql
 ```
 
-> Nota: los archivos usan la convención de Flyway, pero Flyway todavía no está incluido como dependencia. Por ahora las migraciones deben aplicarse manualmente. El script `setup-db.sh` solo carga `V1` y usa las credenciales `vetsa_user` / `vetsa_password`; si se utiliza, también se deben aplicar `V3` y `V4` y ajustar `application.yml`.
+> Nota: los archivos usan la convención de Flyway, pero Flyway todavía no está incluido como dependencia. Por ahora las migraciones deben aplicarse manualmente. El script `setup-db.sh` solo carga `V1` y usa las credenciales `vetsa_user` / `vetsa_password`; si se utiliza, también se deben aplicar `V2`, `V3` y `V4` y ajustar `application.yml`.
 
 ## Ejecutar la aplicación
 
@@ -83,6 +84,27 @@ curl -X POST http://localhost:8080/api/clientes \
     "telefono": "3001234567",
     "correo": "ana@example.com",
     "direccion": "Calle 10 # 20-30"
+  }'
+```
+
+### Veterinarios
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/veterinarios` | Registra un veterinario activo y valida documento y correo duplicados |
+
+Ejemplo:
+
+```bash
+curl -X POST http://localhost:8080/api/veterinarios \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Laura Gómez",
+    "documentoIdentidad": "123456789",
+    "telefono": "3001234567",
+    "correo": "laura@example.com",
+    "direccion": "Calle 10 # 20-30",
+    "horarioAtencion": "Lunes a viernes de 8:00 a 17:00"
   }'
 ```
 
@@ -141,7 +163,7 @@ curl "http://localhost:8080/api/mascotas?documentoIdentidad=1020304050"
 | `POST` | `/api/auth/login` | Pendiente; devuelve un token de ejemplo |
 | `POST` | `/api/auth/register` | Pendiente de implementación |
 
-Los endpoints actuales de catálogo, clientes, servicios y mascotas son públicos. Todavía no existe un filtro JWT que proteja las solicitudes.
+Los endpoints actuales de catálogo, clientes, veterinarios, servicios y mascotas son públicos. Todavía no existe un filtro JWT que proteja las solicitudes.
 
 ## Documentación de la API
 
@@ -187,6 +209,7 @@ src/
 Implementado:
 
 - Consulta del catálogo de veterinarios y servicios.
+- Registro de veterinarios con validaciones y control de duplicados.
 - Registro de clientes con validaciones y control de duplicados.
 - Registro de servicios asociados a veterinarios.
 - Registro y consulta de mascotas por documento del cliente.
@@ -197,6 +220,6 @@ Pendiente:
 
 - Autenticación real y validación de JWT.
 - Automatización de las migraciones de base de datos.
-- Registro y administración de veterinarios.
+- Consulta, actualización y desactivación de veterinarios.
 - Gestión de citas veterinarias.
 - Ampliación de la cobertura de pruebas.

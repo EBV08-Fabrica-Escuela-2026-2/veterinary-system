@@ -1,11 +1,9 @@
-
 ALTER TABLE veterinario
 ADD COLUMN documento_identidad VARCHAR(20),
 ADD COLUMN correo VARCHAR(150);
 
 UPDATE veterinario SET documento_identidad = 'PENDIENTE-' || id WHERE documento_identidad IS NULL;
 UPDATE veterinario SET correo = 'pendiente' || id || '@veterinaria.com' WHERE correo IS NULL;
-
 
 ALTER TABLE veterinario
 ALTER COLUMN documento_identidad SET NOT NULL,

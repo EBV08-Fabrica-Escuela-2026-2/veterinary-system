@@ -98,9 +98,6 @@ class MascotaControllerTest {
 
     @Test
     void registrarMascota_conEdadNegativa_rechazaRegistro() {
-        Cliente cliente = Cliente.builder().id(3L).nombre("Sofía").activo(true).build();
-        when(clienteRepository.findById(3L)).thenReturn(Optional.of(cliente));
-
         MascotaRegistroDTO dto = new MascotaRegistroDTO();
         dto.setNombre("Nala");
         dto.setEspecie("Perro");

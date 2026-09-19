@@ -11,13 +11,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/veterinarios")
 @RequiredArgsConstructor
 @Tag(name = "Veterinarios", description = "API para registrar y gestionar veterinarios")
-
 public class VeterinarioController {
-     private final VeterinarioService veterinarioService;
+    private final VeterinarioService veterinarioService;
 
     @PostMapping
     @Operation(
@@ -28,10 +29,11 @@ public class VeterinarioController {
             @ApiResponse(responseCode = "400", description = "Datos inválidos o veterinario/correo ya registrado")
         }
     )
-    public ResponseEntity<String> registrarVeterinario(@Valid @RequestBody VeterinarioRegistroDTO dto) {
-        veterinarioService.registrarVeterinario(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body("Registro de veterinario exitoso");
+    public ResponseEntity<Map<String, Object>> registrarVeterinario(@Valid @RequestBody VeterinarioRegistroDTO dto) {
+        var veterinario = veterinarioService.registrarVeterinario(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                "mensaje", "Registro de veterinario exitoso",
+                "idVeterinario", veterinario.getId()
+        ));
     }
-
-    
 }
