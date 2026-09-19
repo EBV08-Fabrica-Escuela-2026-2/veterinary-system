@@ -28,7 +28,6 @@ public class GlobalExceptionHandler {
         body.put("mensaje", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
-
     @ExceptionHandler(ClienteNoAutenticadoException.class)
     public ResponseEntity<Map<String, Object>> handleClienteNoAutenticado(ClienteNoAutenticadoException ex) {
         Map<String, Object> body = new LinkedHashMap<>();
