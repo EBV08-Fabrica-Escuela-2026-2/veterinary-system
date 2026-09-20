@@ -26,11 +26,14 @@ public class Servicio {
     @Column(nullable = false, length = 100)
     private String nombre;
 
-    @Column(length = 255)
+    @Column(length = 500)
     private String descripcion;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal precio;
+
+    @Column(name = "duracion_minutos", nullable = false)
+    private Integer duracionMinutos;
 
     @Column(nullable = false)
     @Builder.Default

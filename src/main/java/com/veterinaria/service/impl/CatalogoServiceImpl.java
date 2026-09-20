@@ -21,86 +21,87 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class CatalogoServiceImpl implements CatalogoService {
 
-    private final VeterinarioRepository veterinarioRepository;
-    private final ServicioRepository servicioRepository;
+        private final VeterinarioRepository veterinarioRepository;
+        private final ServicioRepository servicioRepository;
 
-    @Override
-    public CatalogoResponseDTO consultarCatalogo() {
-        List<Veterinario> veterinarios = veterinarioRepository.findByActivoTrue();
+        @Override
+        public CatalogoResponseDTO consultarCatalogo() {
+                List<Veterinario> veterinarios = veterinarioRepository.findByActivoTrue();
 
-        if (veterinarios.isEmpty()) {
-            return CatalogoResponseDTO.builder()
-                    .veterinarios(Collections.emptyList())
-                    .moneda("COP")
-                    .mensaje("No hay veterinarios disponibles por el momento")
-                    .build();
+                if (veterinarios.isEmpty()) {
+                        return CatalogoResponseDTO.builder()
+                                        .veterinarios(Collections.emptyList())
+                                        .moneda("COP")
+                                        .mensaje("No hay veterinarios disponibles por el momento")
+                                        .build();
+                }
+
+                List<VeterinarioCatalogoDTO> catalogo = veterinarios.stream()
+                                .map(this::mapToCatalogoDTO)
+                                .collect(Collectors.toList());
+
+                return CatalogoResponseDTO.builder()
+                                .veterinarios(catalogo)
+                                .moneda("COP")
+                                .build();
         }
 
-        List<VeterinarioCatalogoDTO> catalogo = veterinarios.stream()
-                .map(this::mapToCatalogoDTO)
-                .collect(Collectors.toList());
+        @Override
+        public VeterinarioDetalleDTO consultarDetalleVeterinario(Long veterinarioId) {
+                Veterinario veterinario = veterinarioRepository.findById(veterinarioId)
+                                .filter(Veterinario::getActivo)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Veterinario no encontrado con id: " + veterinarioId));
 
-        return CatalogoResponseDTO.builder()
-                .veterinarios(catalogo)
-                .moneda("COP")
-                .build();
-    }
+                List<Servicio> servicios = servicioRepository
+                                .findByVeterinarioIdAndActivoTrue(veterinarioId);
 
-    @Override
-    public VeterinarioDetalleDTO consultarDetalleVeterinario(Long veterinarioId) {
-        Veterinario veterinario = veterinarioRepository.findById(veterinarioId)
-                .filter(Veterinario::getActivo)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Veterinario no encontrado con id: " + veterinarioId));
+                List<ServicioCatalogoDTO> serviciosDTO = servicios.stream()
+                                .map(this::mapToServicioDTO)
+                                .collect(Collectors.toList());
 
-        List<Servicio> servicios = servicioRepository
-                .findByVeterinarioIdAndActivoTrue(veterinarioId);
-
-        List<ServicioCatalogoDTO> serviciosDTO = servicios.stream()
-                .map(this::mapToServicioDTO)
-                .collect(Collectors.toList());
-
-        return VeterinarioDetalleDTO.builder()
-                .id(veterinario.getId())
-                .nombre(veterinario.getNombre())
-                .direccion(veterinario.getDireccion())
-                .horarioAtencion(veterinario.getHorarioAtencion())
-                .telefono(veterinario.getTelefono())
-                .servicios(serviciosDTO)
-                .moneda("COP")
-                .build();
-    }
-
-    private VeterinarioCatalogoDTO mapToCatalogoDTO(Veterinario veterinario) {
-        List<Servicio> servicios = servicioRepository
-                .findByVeterinarioIdAndActivoTrue(veterinario.getId());
-
-        if (servicios.isEmpty()) {
-            return VeterinarioCatalogoDTO.builder()
-                    .id(veterinario.getId())
-                    .nombre(veterinario.getNombre())
-                    .servicios(Collections.emptyList())
-                    .mensajeServicios("Sin servicios publicados")
-                    .build();
+                return VeterinarioDetalleDTO.builder()
+                                .id(veterinario.getId())
+                                .nombre(veterinario.getNombre())
+                                .direccion(veterinario.getDireccion())
+                                .horarioAtencion(veterinario.getHorarioAtencion())
+                                .telefono(veterinario.getTelefono())
+                                .servicios(serviciosDTO)
+                                .moneda("COP")
+                                .build();
         }
 
-        List<ServicioCatalogoDTO> serviciosDTO = servicios.stream()
-                .map(this::mapToServicioDTO)
-                .collect(Collectors.toList());
+        private VeterinarioCatalogoDTO mapToCatalogoDTO(Veterinario veterinario) {
+                List<Servicio> servicios = servicioRepository
+                                .findByVeterinarioIdAndActivoTrue(veterinario.getId());
 
-        return VeterinarioCatalogoDTO.builder()
-                .id(veterinario.getId())
-                .nombre(veterinario.getNombre())
-                .servicios(serviciosDTO)
-                .build();
-    }
+                if (servicios.isEmpty()) {
+                        return VeterinarioCatalogoDTO.builder()
+                                        .id(veterinario.getId())
+                                        .nombre(veterinario.getNombre())
+                                        .servicios(Collections.emptyList())
+                                        .mensajeServicios("Sin servicios publicados")
+                                        .build();
+                }
 
-    private ServicioCatalogoDTO mapToServicioDTO(Servicio servicio) {
-        return ServicioCatalogoDTO.builder()
-                .id(servicio.getId())
-                .nombre(servicio.getNombre())
-                .descripcion(servicio.getDescripcion())
-                .precio(COPCurrencyFormat.format(servicio.getPrecio()))
-                .build();
-    }
+                List<ServicioCatalogoDTO> serviciosDTO = servicios.stream()
+                                .map(this::mapToServicioDTO)
+                                .collect(Collectors.toList());
+
+                return VeterinarioCatalogoDTO.builder()
+                                .id(veterinario.getId())
+                                .nombre(veterinario.getNombre())
+                                .servicios(serviciosDTO)
+                                .build();
+        }
+
+        private ServicioCatalogoDTO mapToServicioDTO(Servicio servicio) {
+                return ServicioCatalogoDTO.builder()
+                                .id(servicio.getId())
+                                .nombre(servicio.getNombre())
+                                .descripcion(servicio.getDescripcion())
+                                .precio(COPCurrencyFormat.format(servicio.getPrecio()))
+                                .duracionMinutos(servicio.getDuracionMinutos())
+                                .build();
+        }
 }

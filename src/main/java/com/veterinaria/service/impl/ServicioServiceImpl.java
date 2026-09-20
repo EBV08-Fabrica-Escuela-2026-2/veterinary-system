@@ -37,6 +37,7 @@ public class ServicioServiceImpl implements ServicioService {
                 .nombre(dto.getNombre())
                 .descripcion(dto.getDescripcion())
                 .precio(dto.getPrecio())
+                .duracionMinutos(dto.getDuracionMinutos())
                 .activo(true)
                 .build();
 
