@@ -43,6 +43,9 @@ public class Mascota {
     @Column(nullable = false)
     private Integer edad;
 
+    @Column(nullable = false, length = 20)
+    private String sexo;
+
     @Column(length = 500)
     private String observaciones;
 

@@ -3,6 +3,7 @@ package com.veterinaria.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class MascotaRegistroDTO {
@@ -23,6 +24,10 @@ public class MascotaRegistroDTO {
     @Min(value = 0, message = "La edad ingresada no es válida")
     private Integer edad;
 
+    @NotBlank(message = "El sexo es obligatorio")
+    @Pattern(regexp = "^(Hembra|Macho)$", message = "El sexo debe ser Hembra o Macho")
+    private String sexo;
+
     @Size(max = 500, message = "Las observaciones no pueden superar los 500 caracteres")
     private String observaciones;
 
@@ -37,6 +42,9 @@ public class MascotaRegistroDTO {
 
     public Integer getEdad() { return edad; }
     public void setEdad(Integer edad) { this.edad = edad; }
+
+    public String getSexo() { return sexo; }
+    public void setSexo(String sexo) { this.sexo = sexo; }
 
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }

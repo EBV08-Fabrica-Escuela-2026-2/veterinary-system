@@ -32,11 +32,14 @@ public class MascotaServiceImpl implements MascotaService {
             throw new IllegalArgumentException("El cliente no se encuentra activo");
         }
 
+        String sexoNormalizado = normalizarSexo(dto.getSexo());
+
         Mascota mascota = Mascota.builder()
                 .nombre(dto.getNombre().trim())
                 .especie(dto.getEspecie().trim())
                 .raza(dto.getRaza().trim())
                 .edad(dto.getEdad())
+                .sexo(sexoNormalizado)
                 .observaciones(dto.getObservaciones() == null || dto.getObservaciones().isBlank() ? null : dto.getObservaciones().trim())
                 .cliente(cliente)
                 .build();
@@ -74,8 +77,26 @@ public class MascotaServiceImpl implements MascotaService {
         if (dto.getEdad() == null || dto.getEdad() < 0) {
             throw new IllegalArgumentException("La edad ingresada no es válida");
         }
+        if (dto.getSexo() == null || dto.getSexo().isBlank()) {
+            throw new IllegalArgumentException("El sexo es obligatorio");
+        }
+        String sexo = dto.getSexo().trim();
+        if (!"Hembra".equalsIgnoreCase(sexo) && !"Macho".equalsIgnoreCase(sexo)) {
+            throw new IllegalArgumentException("El sexo debe ser Hembra o Macho");
+        }
         if (dto.getObservaciones() != null && dto.getObservaciones().length() > 500) {
             throw new IllegalArgumentException("Las observaciones no pueden superar los 500 caracteres");
         }
+    }
+
+    private String normalizarSexo(String sexo) {
+        if (sexo == null || sexo.isBlank()) {
+            throw new IllegalArgumentException("El sexo es obligatorio");
+        }
+        String sexoNormalizado = sexo.trim();
+        if (!"Hembra".equalsIgnoreCase(sexoNormalizado) && !"Macho".equalsIgnoreCase(sexoNormalizado)) {
+            throw new IllegalArgumentException("El sexo debe ser Hembra o Macho");
+        }
+        return sexoNormalizado.substring(0, 1).toUpperCase() + sexoNormalizado.substring(1).toLowerCase();
     }
 }
