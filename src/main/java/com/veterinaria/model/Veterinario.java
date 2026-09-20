@@ -48,6 +48,15 @@ public class Veterinario {
     @Column(nullable = false, unique = true, length = 150)
     private String correo;
 
+    @Column(name = "tipo_documento", length = 20)
+    private String tipoDocumento;
+
+    @Column(name = "tarjeta_profesional", length = 50)
+    private String tarjetaProfesional;
+
+    @Column(length = 100)
+    private String especialidad;
+
     @Column(name = "horario_atencion", length = 100)
     private String horarioAtencion;
 

@@ -1,6 +1,9 @@
 package com.veterinaria.dto;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class VeterinarioRegistroDTO {
     @NotBlank(message = "Este campo es obligatorio")
@@ -21,6 +24,16 @@ public class VeterinarioRegistroDTO {
     @Size(max = 150, message = "El correo no puede superar los 150 caracteres")
     private String correo;
 
+    @NotBlank(message = "Este campo es obligatorio")
+    private String tipoDocumento;
+
+    @NotBlank(message = "Este campo es obligatorio")
+    @Size(max = 50, message = "La tarjeta profesional no puede superar los 50 caracteres")
+    private String tarjetaProfesional;
+
+    @NotBlank(message = "Este campo es obligatorio")
+    private String especialidad;
+
     @Size(max = 255, message = "La dirección no puede superar los 255 caracteres")
     private String direccion;
 
@@ -39,6 +52,15 @@ public class VeterinarioRegistroDTO {
 
     public String getCorreo() { return correo; }
     public void setCorreo(String correo) { this.correo = correo; }
+
+    public String getTipoDocumento() { return tipoDocumento; }
+    public void setTipoDocumento(String tipoDocumento) { this.tipoDocumento = tipoDocumento; }
+
+    public String getTarjetaProfesional() { return tarjetaProfesional; }
+    public void setTarjetaProfesional(String tarjetaProfesional) { this.tarjetaProfesional = tarjetaProfesional; }
+
+    public String getEspecialidad() { return especialidad; }
+    public void setEspecialidad(String especialidad) { this.especialidad = especialidad; }
 
     public String getDireccion() { return direccion; }
     public void setDireccion(String direccion) { this.direccion = direccion; }
