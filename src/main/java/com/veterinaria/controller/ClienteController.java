@@ -1,6 +1,7 @@
 package com.veterinaria.controller;
 
 import com.veterinaria.dto.ClienteRegistroDTO;
+import com.veterinaria.dto.ClienteResponseDTO;
 import com.veterinaria.service.ClienteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -30,5 +31,19 @@ public class ClienteController {
     public ResponseEntity<String> registrarCliente(@Valid @RequestBody ClienteRegistroDTO dto) {
         clienteService.registrarCliente(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body("Registro de cliente exitoso");
+    }
+
+    @GetMapping
+    @Operation(
+        summary = "Consultar un cliente por documento",
+        description = "Busca un cliente por su documento de identidad",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Cliente encontrado"),
+            @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
+        }
+    )
+    public ResponseEntity<ClienteResponseDTO> consultarClientePorDocumento(
+            @RequestParam String documentoIdentidad) {
+        return ResponseEntity.ok(clienteService.consultarClientePorDocumento(documentoIdentidad));
     }
 }

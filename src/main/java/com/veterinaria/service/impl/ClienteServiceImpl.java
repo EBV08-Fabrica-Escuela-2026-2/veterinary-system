@@ -1,6 +1,8 @@
 package com.veterinaria.service.impl;
 
 import com.veterinaria.dto.ClienteRegistroDTO;
+import com.veterinaria.dto.ClienteResponseDTO;
+import com.veterinaria.exception.ResourceNotFoundException;
 import com.veterinaria.model.Cliente;
 import com.veterinaria.repository.ClienteRepository;
 import com.veterinaria.service.ClienteService;
@@ -34,5 +36,22 @@ public class ClienteServiceImpl implements ClienteService {
                 .build();
 
         return clienteRepository.save(cliente);
+    }
+
+    @Override
+    public ClienteResponseDTO consultarClientePorDocumento(String documentoIdentidad) {
+        Cliente cliente = clienteRepository.findByDocumentoIdentidad(documentoIdentidad)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Cliente no encontrado con documento: " + documentoIdentidad));
+
+        return ClienteResponseDTO.builder()
+                .id(cliente.getId())
+                .nombre(cliente.getNombre())
+                .documentoIdentidad(cliente.getDocumentoIdentidad())
+                .telefono(cliente.getTelefono())
+                .correo(cliente.getCorreo())
+                .direccion(cliente.getDireccion())
+                .activo(cliente.getActivo())
+                .build();
     }
 }
