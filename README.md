@@ -18,12 +18,16 @@ El proyecto incluye las dependencias de JWT, pero la autenticación y la emisió
 
 ## Requisitos
 
+### Con Docker (recomendado)
+Solo necesitas:
+- **Docker Desktop** con Docker Compose
+- **Git**
+- Tener clonado el repo [vetagenda-frontend](https://github.com/EBV08-Fabrica-Escuela-2026-2/vetagenda-frontend) en una carpeta hermana (el `docker-compose.yml` vive allí)
+
+### En modo desarrollo local
 - JDK 21
 - Maven 3.9+
-- PostgreSQL
-- Una base de datos llamada `veterinaria`
-
-> Nota: el repositorio contiene los scripts `mvnw` y `mvnw.cmd`, pero no incluye actualmente los archivos de `.mvn/wrapper`. Hasta que se complete el Maven Wrapper, use una instalación local de Maven.
+- PostgreSQL 16
 
 ## Configuración local
 
@@ -37,26 +41,56 @@ La configuración actual se encuentra en `src/main/resources/application.yml`:
 | Contraseña | `123456` |
 | Perfil activo | `dev` |
 
-Antes de iniciar la aplicación, cree la base de datos y ejecute en orden los scripts SQL ubicados en `src/main/resources/db/migration`:
+## Ejecutar la aplicación
+
+### Opción 1: Docker Compose (recomendado)
+
+El orquestador vive en el repo [vetagenda-frontend](https://github.com/EBV08-Fabrica-Escuela-2026-2/vetagenda-frontend). Clona ambos repos en carpetas hermanas y ejecuta:
+
+```bash
+# Desde la carpeta VetAgenda/
+docker compose up --build
+
+# Siguientes veces (sin reconstruir)
+docker compose up
+```
+
+| Servicio | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8080/api |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
+| PostgreSQL | localhost:5432 (DB: `vetagenda`) |
+
+```bash
+# Detener
+docker compose down
+
+# Detener y borrar la BD (necesario si cambia el esquema)
+docker compose down -v
+```
+
+### Opción 2: Desarrollo local
+
+Crea la base de datos `veterinaria` en PostgreSQL y aplica los scripts en orden:
 
 ```bash
 psql -U postgres -d veterinaria -f src/main/resources/db/migration/V1__create_tables_and_seed_data.sql
 psql -U postgres -d veterinaria -f src/main/resources/db/migration/V2__add_documento_correo_veterinario.sql
 psql -U postgres -d veterinaria -f src/main/resources/db/migration/V3__create_cliente.sql
 psql -U postgres -d veterinaria -f src/main/resources/db/migration/V4__create_mascota.sql
+psql -U postgres -d veterinaria -f src/main/resources/db/migration/V5__add_campos_veterinario.sql
+psql -U postgres -d veterinaria -f src/main/resources/db/migration/V6__add_mascota_sexo.sql
+psql -U postgres -d veterinaria -f src/main/resources/db/migration/V7__add_duracion_minutos_servicio.sql
 ```
 
-> Nota: los archivos usan la convención de Flyway, pero Flyway todavía no está incluido como dependencia. Por ahora las migraciones deben aplicarse manualmente. El script `setup-db.sh` solo carga `V1` y usa las credenciales `vetsa_user` / `vetsa_password`; si se utiliza, también se deben aplicar `V2`, `V3` y `V4` y ajustar `application.yml`.
-
-## Ejecutar la aplicación
-
-En la raíz del repositorio:
+Luego inicia la aplicación:
 
 ```bash
 mvn spring-boot:run
 ```
 
-La API quedará disponible en [http://localhost:8080](http://localhost:8080).
+La API queda disponible en [http://localhost:8080](http://localhost:8080).
 
 ## Endpoints disponibles
 
