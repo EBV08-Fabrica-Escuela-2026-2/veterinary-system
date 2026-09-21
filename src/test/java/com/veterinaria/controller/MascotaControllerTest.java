@@ -52,6 +52,7 @@ class MascotaControllerTest {
         dto.setEspecie("Perro");
         dto.setRaza("Labrador");
         dto.setEdad(3);
+        dto.setSexo("Macho");
         dto.setObservaciones("Muy juguetón");
 
         Mascota resultado = mascotaService.registrarMascota(dto, 1L);
@@ -59,6 +60,7 @@ class MascotaControllerTest {
         assertNotNull(resultado);
         assertEquals("Firulais", resultado.getNombre());
         assertEquals("Perro", resultado.getEspecie());
+        assertEquals("Macho", resultado.getSexo());
         assertEquals(cliente, resultado.getCliente());
         verify(mascotaRepository).save(any(Mascota.class));
     }
@@ -74,11 +76,13 @@ class MascotaControllerTest {
         dto.setEspecie("Gato");
         dto.setRaza("Siamés");
         dto.setEdad(2);
+        dto.setSexo("Hembra");
         dto.setObservaciones("");
 
         Mascota resultado = mascotaService.registrarMascota(dto, 2L);
 
         assertNotNull(resultado);
+        assertEquals("Hembra", resultado.getSexo());
         assertNull(resultado.getObservaciones());
     }
 
@@ -89,6 +93,7 @@ class MascotaControllerTest {
         dto.setEspecie("Perro");
         dto.setRaza("Pastor Alemán");
         dto.setEdad(4);
+        dto.setSexo("Macho");
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> mascotaService.registrarMascota(dto, 1L));
@@ -103,6 +108,7 @@ class MascotaControllerTest {
         dto.setEspecie("Perro");
         dto.setRaza("Cocker");
         dto.setEdad(-1);
+        dto.setSexo("Hembra");
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> mascotaService.registrarMascota(dto, 3L));
@@ -117,6 +123,7 @@ class MascotaControllerTest {
         dto.setEspecie("Perro");
         dto.setRaza("Pug");
         dto.setEdad(1);
+        dto.setSexo("Hembra");
 
         assertThrows(ClienteNoAutenticadoException.class,
                 () -> mascotaService.registrarMascota(dto, null));
@@ -127,14 +134,16 @@ class MascotaControllerTest {
         Cliente cliente = Cliente.builder().id(4L).nombre("Pedro").activo(true).build();
         when(clienteRepository.findById(4L)).thenReturn(Optional.of(cliente));
         when(mascotaRepository.findByClienteId(4L)).thenReturn(List.of(
-                Mascota.builder().id(1L).nombre("Firulais").especie("Perro").raza("Labrador").edad(3).cliente(cliente).build(),
-                Mascota.builder().id(2L).nombre("Milo").especie("Gato").raza("Siamés").edad(2).cliente(cliente).build()
+                Mascota.builder().id(1L).nombre("Firulais").especie("Perro").raza("Labrador").edad(3).sexo("Macho").cliente(cliente).build(),
+                Mascota.builder().id(2L).nombre("Milo").especie("Gato").raza("Siamés").edad(2).sexo("Hembra").cliente(cliente).build()
         ));
 
         List<Mascota> mascotas = mascotaService.listarMascotasPorCliente(4L);
 
         assertEquals(2, mascotas.size());
         assertEquals("Firulais", mascotas.get(0).getNombre());
+        assertEquals("Macho", mascotas.get(0).getSexo());
         assertEquals("Milo", mascotas.get(1).getNombre());
+        assertEquals("Hembra", mascotas.get(1).getSexo());
     }
 }
