@@ -1,11 +1,17 @@
 package com.veterinaria.service.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
+import com.veterinaria.dto.VeterinarioListaDTO;
 import com.veterinaria.dto.VeterinarioRegistroDTO;
 import com.veterinaria.model.Veterinario;
 import com.veterinaria.repository.VeterinarioRepository;
 import com.veterinaria.service.VeterinarioService;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +39,9 @@ public class VeterinarioServiceImpl implements VeterinarioService {
                 .correo(correo)
                 .direccion(normalizarOpcional(dto.getDireccion()))
                 .horarioAtencion(normalizarOpcional(dto.getHorarioAtencion()))
+                .tipoDocumento(dto.getTipoDocumento().trim())
+                .tarjetaProfesional(dto.getTarjetaProfesional().trim())
+                .especialidad(dto.getEspecialidad().trim())
                 .activo(true)
                 .build();
 
@@ -41,5 +50,13 @@ public class VeterinarioServiceImpl implements VeterinarioService {
 
     private String normalizarOpcional(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim();
+    }
+
+    @Override
+    public List<VeterinarioListaDTO> listarActivos() {
+        return veterinarioRepository.findByActivoTrue()
+                .stream()
+                .map(v -> new VeterinarioListaDTO(v.getId(), v.getNombre()))
+                .collect(Collectors.toList());
     }
 }
