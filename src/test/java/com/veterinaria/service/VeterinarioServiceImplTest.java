@@ -87,6 +87,9 @@ class VeterinarioServiceImplTest {
         dto.setCorreo("laura@example.com");
         dto.setDireccion("Calle 10");
         dto.setHorarioAtencion("Lunes a viernes");
+        dto.setTipoDocumento("CC");
+        dto.setTarjetaProfesional("TP-12345");
+        dto.setEspecialidad("Medicina general");
         return dto;
     }
 }
