@@ -19,6 +19,15 @@ public class VeterinarioCatalogoDTO {
     @Schema(description = "Nombre completo del veterinario", example = "Dr. Carlos Pérez")
     private String nombre;
 
+    @Schema(description = "Dirección del consultorio", example = "Calle 10 #5-20, Bogotá")
+    private String direccion;
+
+    @Schema(description = "Teléfono de contacto", example = "310-123-4567")
+    private String telefono;
+
+    @Schema(description = "Horario de atención", example = "8:00 AM - 6:00 PM")
+    private String horarioAtencion;
+
     @Schema(description = "Lista de servicios ofrecidos por el veterinario")
     private List<ServicioCatalogoDTO> servicios;
 
