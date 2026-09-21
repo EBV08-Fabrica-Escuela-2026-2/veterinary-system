@@ -18,19 +18,22 @@ public class ClienteServiceImpl implements ClienteService {
 
     @Override
     public Cliente registrarCliente(ClienteRegistroDTO dto) {
-        if (clienteRepository.existsByDocumentoIdentidad(dto.getDocumentoIdentidad())) {
+        String documento = dto.getDocumentoIdentidad() != null ? dto.getDocumentoIdentidad().trim() : null;
+        String correo = dto.getCorreo() != null ? dto.getCorreo().trim() : null;
+
+        if (documento != null && clienteRepository.findByDocumentoIdentidad(documento).isPresent()) {
             throw new IllegalArgumentException("Este cliente ya se encuentra registrado");
         }
 
-        if (clienteRepository.existsByCorreo(dto.getCorreo())) {
+        if (correo != null && clienteRepository.findByCorreo(correo).isPresent()) {
             throw new IllegalArgumentException("Este correo ya se encuentra registrado");
         }
 
         Cliente cliente = Cliente.builder()
                 .nombre(dto.getNombre())
-                .documentoIdentidad(dto.getDocumentoIdentidad())
+                .documentoIdentidad(documento)
                 .telefono(dto.getTelefono())
-                .correo(dto.getCorreo())
+                .correo(correo)
                 .direccion(dto.getDireccion())
                 .activo(true)
                 .build();
