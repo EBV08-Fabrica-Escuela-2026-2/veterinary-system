@@ -32,6 +32,9 @@ public class Servicio {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal precio;
 
+    @Column(name = "duracion_minutos")
+    private Integer duracionMinutos;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;

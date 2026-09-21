@@ -21,6 +21,9 @@ public class ServicioCatalogoDTO {
     @Schema(description = "Descripción breve del servicio", example = "Revisión completa del paciente")
     private String descripcion;
 
-    @Schema(description = "Precio formateado en pesos colombianos", example = "$85.000")
-    private String precio;
+    @Schema(description = "Precio del servicio en COP (número entero)", example = "85000")
+    private Long precio;
+
+    @Schema(description = "Duración del servicio en minutos", example = "30")
+    private Integer duracionMinutos;
 }
