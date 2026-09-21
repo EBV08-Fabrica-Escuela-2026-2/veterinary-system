@@ -7,7 +7,6 @@ import com.veterinaria.model.Veterinario;
 import com.veterinaria.repository.ServicioRepository;
 import com.veterinaria.repository.VeterinarioRepository;
 import com.veterinaria.service.CatalogoService;
-import com.veterinaria.util.COPCurrencyFormat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,6 +78,9 @@ public class CatalogoServiceImpl implements CatalogoService {
             return VeterinarioCatalogoDTO.builder()
                     .id(veterinario.getId())
                     .nombre(veterinario.getNombre())
+                    .direccion(veterinario.getDireccion())
+                    .telefono(veterinario.getTelefono())
+                    .horarioAtencion(veterinario.getHorarioAtencion())
                     .servicios(Collections.emptyList())
                     .mensajeServicios("Sin servicios publicados")
                     .build();
@@ -91,6 +93,9 @@ public class CatalogoServiceImpl implements CatalogoService {
         return VeterinarioCatalogoDTO.builder()
                 .id(veterinario.getId())
                 .nombre(veterinario.getNombre())
+                .direccion(veterinario.getDireccion())
+                .telefono(veterinario.getTelefono())
+                .horarioAtencion(veterinario.getHorarioAtencion())
                 .servicios(serviciosDTO)
                 .build();
     }
@@ -100,7 +105,8 @@ public class CatalogoServiceImpl implements CatalogoService {
                 .id(servicio.getId())
                 .nombre(servicio.getNombre())
                 .descripcion(servicio.getDescripcion())
-                .precio(COPCurrencyFormat.format(servicio.getPrecio()))
+                .precio(servicio.getPrecio().longValue())
+                .duracionMinutos(servicio.getDuracionMinutos())
                 .build();
     }
 }

@@ -12,12 +12,16 @@ public class ServicioRegistroDTO {
     @Size(max = 100, message = "El nombre no puede superar los 100 caracteres")
     private String nombre;
 
-    @Size(max = 255, message = "La descripción no puede superar los 255 caracteres")
+    @Size(max = 500, message = "La descripción no puede superar los 500 caracteres")
     private String descripcion;
 
     @NotNull(message = "Este campo es obligatorio")
     @DecimalMin(value = "0.0", inclusive = false, message = "El precio debe ser mayor a cero")
     private BigDecimal precio;
+
+    @NotNull(message = "Este campo es obligatorio")
+    @Min(value = 1, message = "La duración debe ser de al menos 1 minuto")
+    private Integer duracionMinutos;
 
     // Getters y setters
     public Long getVeterinarioId() { return veterinarioId; }
@@ -31,4 +35,7 @@ public class ServicioRegistroDTO {
 
     public BigDecimal getPrecio() { return precio; }
     public void setPrecio(BigDecimal precio) { this.precio = precio; }
+
+    public Integer getDuracionMinutos() { return duracionMinutos; }
+    public void setDuracionMinutos(Integer duracionMinutos) { this.duracionMinutos = duracionMinutos; }
 }

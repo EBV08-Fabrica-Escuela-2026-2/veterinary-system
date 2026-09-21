@@ -1,0 +1,5 @@
+ALTER TABLE servicio
+    ADD COLUMN duracion_minutos INTEGER NOT NULL DEFAULT 30;
+
+ALTER TABLE servicio
+    ALTER COLUMN descripcion TYPE VARCHAR(500);
