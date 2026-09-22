@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: vetagenda-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api-docs
+    autoDeployTrigger: commit
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vetagenda-postgres
+          property: connectionString
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: validate
+      - key: SPRING_JPA_SHOW_SQL
+        value: "false"
+      - key: APP_CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: APP_JWT_SECRET
+        generateValue: true
+
+databases:
+  - name: vetagenda-postgres
+    plan: free
+    databaseName: vetagenda
+    user: vetagenda
