@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.veterinaria.dto.VeterinarioListaDTO;
 import com.veterinaria.dto.VeterinarioRegistroDTO;
 import com.veterinaria.service.VeterinarioService;
+import com.veterinaria.dto.VeterinarioFichaDTO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -50,6 +51,16 @@ public class VeterinarioController {
         description = "Retorna id y nombre de los veterinarios activos, para seleccionarlos al registrar un servicio",
         responses = {
             @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente")
+        }
+    )
+
+    @GetMapping("/{id}")
+    @Operation(
+        summary = "Consultar ficha del profesional",
+        description = "Retorna nombre, especialidad, número de licencia y foto de perfil del veterinario",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Ficha obtenida exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Veterinario no encontrado")
         }
     )
     public ResponseEntity<List<VeterinarioListaDTO>> listarActivos() {

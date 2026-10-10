@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-
+import com.veterinaria.dto.VeterinarioFichaDTO;
+import com.veterinaria.exception.ResourceNotFoundException;
 import com.veterinaria.dto.VeterinarioListaDTO;
 import com.veterinaria.dto.VeterinarioRegistroDTO;
 import com.veterinaria.model.Veterinario;
@@ -58,5 +59,19 @@ public class VeterinarioServiceImpl implements VeterinarioService {
                 .stream()
                 .map(v -> new VeterinarioListaDTO(v.getId(), v.getNombre()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public VeterinarioFichaDTO obtenerFicha(Long id) {
+        Veterinario veterinario = veterinarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Veterinario no encontrado con id: " + id));
+
+        return VeterinarioFichaDTO.builder()
+                .id(veterinario.getId())
+                .nombre(veterinario.getNombre())
+                .especialidad(veterinario.getEspecialidad())
+                .tarjetaProfesional(veterinario.getTarjetaProfesional())
+                .fotoUrl(veterinario.getFotoUrl())
+                .build();
     }
 }
