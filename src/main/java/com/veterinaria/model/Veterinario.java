@@ -57,6 +57,9 @@ public class Veterinario {
     @Column(length = 100)
     private String especialidad;
 
+    @Column(name = "foto_url", length = 500)
+    private String fotoUrl;
+
     @Column(name = "horario_atencion", length = 100)
     private String horarioAtencion;
 
