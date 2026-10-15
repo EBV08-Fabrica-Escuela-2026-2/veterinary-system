@@ -28,6 +28,7 @@ public class GlobalExceptionHandler {
         body.put("mensaje", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
+
     @ExceptionHandler(ClienteNoAutenticadoException.class)
     public ResponseEntity<Map<String, Object>> handleClienteNoAutenticado(ClienteNoAutenticadoException ex) {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -36,6 +37,16 @@ public class GlobalExceptionHandler {
         body.put("error", "Unauthorized");
         body.put("mensaje", ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
+    @ExceptionHandler(CitaNoDisponibleException.class)
+    public ResponseEntity<Map<String, Object>> handleCitaNoDisponible(CitaNoDisponibleException ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now().toString());
+        body.put("status", HttpStatus.CONFLICT.value());
+        body.put("error", "Conflict");
+        body.put("mensaje", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
