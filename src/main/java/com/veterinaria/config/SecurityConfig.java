@@ -4,18 +4,24 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+
+import com.veterinaria.repository.ClienteRepository;
+import com.veterinaria.util.JwtTokenService;
 
 @Configuration
 @EnableWebSecurity
@@ -25,7 +31,8 @@ public class SecurityConfig {
     private String allowedOrigins;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenService jwtTokenService,
+            ClienteRepository clienteRepository) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -38,6 +45,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/veterinarios/**").permitAll()
                         .requestMatchers("/api/servicios/**").permitAll()
                         .requestMatchers("/api/mascotas/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/citas/*/disponibilidad").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/citas/*/reprogramar").authenticated()
                         .requestMatchers("/api/citas/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**").permitAll()
                         .anyRequest().authenticated())
@@ -47,15 +56,22 @@ public class SecurityConfig {
                             response.setContentType("application/json");
                             response.getWriter().write(
                                     "{\"error\": \"No autenticado\", \"mensaje\": \"Se requiere iniciar sesión\"}");
-                        }));
+                        }))
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService, clienteRepository),
+                        UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(parseAllowedOrigins());
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 

@@ -17,4 +17,8 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     Optional<Cliente> findByDocumentoIdentidad(String documentoIdentidad);
 
     Optional<Cliente> findByCorreo(String correo);
+
+    Optional<Cliente> findByCorreoIgnoreCaseAndDocumentoIdentidad(String correo, String documentoIdentidad);
+
+    Optional<Cliente> findByCorreoIgnoreCase(String correo);
 }

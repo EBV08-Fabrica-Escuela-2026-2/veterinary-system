@@ -1,0 +1,6 @@
+CREATE TABLE cliente_credencial (
+    id BIGSERIAL PRIMARY KEY,
+    cliente_id BIGINT NOT NULL UNIQUE REFERENCES cliente(id) ON DELETE CASCADE,
+    password_hash VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

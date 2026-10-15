@@ -8,6 +8,9 @@ import java.util.List;
 public interface DisponibilidadService {
     DisponibilidadDiaDTO consultarDisponibilidad(Long servicioId, Long veterinarioId, LocalDate fecha);
 
+        DisponibilidadDiaDTO consultarDisponibilidad(Long servicioId, Long veterinarioId, LocalDate fecha,
+            Long citaIdExcluir);
+
     List<DisponibilidadDiaDTO> consultarDisponibilidadRango(Long servicioId, Long veterinarioId, LocalDate fechaInicio,
             LocalDate fechaFin);
 }

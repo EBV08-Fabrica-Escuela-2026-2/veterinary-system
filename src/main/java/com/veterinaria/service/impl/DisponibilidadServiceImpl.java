@@ -22,6 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +36,13 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
     @Override
     @Transactional(readOnly = true)
     public DisponibilidadDiaDTO consultarDisponibilidad(Long servicioId, Long veterinarioId, LocalDate fecha) {
+        return consultarDisponibilidad(servicioId, veterinarioId, fecha, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DisponibilidadDiaDTO consultarDisponibilidad(Long servicioId, Long veterinarioId, LocalDate fecha,
+            Long citaIdExcluir) {
         if (fecha == null) {
             throw new IllegalArgumentException("La fecha es obligatoria");
         }
@@ -50,7 +58,8 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
             throw new IllegalArgumentException("El servicio indicado no pertenece al veterinario especificado");
         }
 
-        List<FranjaHorariaDTO> franjas = calcularFranjas(veterinario, servicio.getDuracionMinutos(), fecha);
+        List<FranjaHorariaDTO> franjas = calcularFranjas(veterinario, servicio.getDuracionMinutos(), fecha,
+            citaIdExcluir);
 
         DisponibilidadDiaDTO dto = new DisponibilidadDiaDTO();
         dto.setServicioId(servicio.getId());
@@ -70,7 +79,8 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
             } else {
                 dto.setMensaje("No hay horarios disponibles para la fecha seleccionada.");
             }
-            dto.setFechaDisponibleMasCercana(buscarFechaMasCercana(veterinario, servicio.getDuracionMinutos(), fecha));
+                dto.setFechaDisponibleMasCercana(buscarFechaMasCercana(veterinario, servicio.getDuracionMinutos(), fecha,
+                    citaIdExcluir));
         } else {
             dto.setHayDisponibilidad(true);
             dto.setMensaje(null);
@@ -103,7 +113,8 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
         return resultado;
     }
 
-    private List<FranjaHorariaDTO> calcularFranjas(Veterinario veterinario, Integer duracionMinutos, LocalDate fecha) {
+        private List<FranjaHorariaDTO> calcularFranjas(Veterinario veterinario, Integer duracionMinutos, LocalDate fecha,
+            Long citaIdExcluir) {
         int duracion = (duracionMinutos == null || duracionMinutos <= 0) ? 30 : duracionMinutos;
 
         List<HorarioAtencion> bloques = horarioAtencionRepository
@@ -115,8 +126,8 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
         LocalDateTime desde = fecha.atStartOfDay();
         LocalDateTime hasta = fecha.plusDays(1).atStartOfDay();
         List<Cita> citas = citaRepository
-                .findByVeterinarioIdAndEstadoAndFechaHoraInicioGreaterThanEqualAndFechaHoraInicioLessThan(
-                        veterinario.getId(), "CONFIRMADA", desde, hasta);
+            .findByVeterinarioIdAndEstadoAndFechaHoraInicioLessThanAndFechaHoraFinGreaterThan(
+                veterinario.getId(), "CONFIRMADA", hasta, desde);
 
         LocalDateTime ahora = LocalDateTime.now(clock);
         List<FranjaHorariaDTO> franjas = new ArrayList<>();
@@ -130,7 +141,8 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
                 LocalDateTime slotActual = slot;
                 boolean futuro = slotActual.isAfter(ahora);
                 boolean libre = citas.stream()
-                        .noneMatch(cita -> slotActual.isBefore(cita.getFechaHoraFin())
+                    .noneMatch(cita -> !Objects.equals(cita.getId(), citaIdExcluir)
+                        && slotActual.isBefore(cita.getFechaHoraFin())
                                 && finSlot.isAfter(cita.getFechaHoraInicio()));
                 if (futuro && libre) {
                     franjas.add(new FranjaHorariaDTO(slotActual.toLocalTime(), finSlot.toLocalTime()));
@@ -143,10 +155,11 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
         return franjas;
     }
 
-    private LocalDate buscarFechaMasCercana(Veterinario veterinario, Integer duracionMinutos, LocalDate desdeFecha) {
+    private LocalDate buscarFechaMasCercana(Veterinario veterinario, Integer duracionMinutos, LocalDate desdeFecha,
+            Long citaIdExcluir) {
         for (int i = 1; i <= 60; i++) {
             LocalDate candidata = desdeFecha.plusDays(i);
-            if (!calcularFranjas(veterinario, duracionMinutos, candidata).isEmpty()) {
+            if (!calcularFranjas(veterinario, duracionMinutos, candidata, citaIdExcluir).isEmpty()) {
                 return candidata;
             }
         }
