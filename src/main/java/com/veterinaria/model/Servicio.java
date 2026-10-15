@@ -35,6 +35,12 @@ public class Servicio {
     @Column(name = "duracion_minutos", nullable = false)
     private Integer duracionMinutos;
 
+    @Column(length = 100)
+    private String categoria;
+
+    @Column(name = "indicaciones_previas", length = 1000)
+    private String indicacionesPrevias;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;
