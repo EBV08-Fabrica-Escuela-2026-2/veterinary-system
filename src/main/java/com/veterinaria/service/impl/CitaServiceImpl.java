@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.veterinaria.dto.CitaDetalleDTO;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -35,6 +36,7 @@ public class CitaServiceImpl implements CitaService {
     public static final String ESTADO_CONFIRMADA = "CONFIRMADA";
     public static final String ESTADO_ANULADA = "ANULADA";
     private static final long HORAS_MINIMAS_CANCELACION = 2;
+    private static final String SIN_INDICACIONES = "No hay indicaciones especiales";
 
     private final CitaRepository citaRepository;
     private final ClienteRepository clienteRepository;
@@ -186,5 +188,64 @@ public class CitaServiceImpl implements CitaService {
 
     private boolean cupoLiberado(String estado) {
         return ESTADO_ANULADA.equals(estado);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public CitaDetalleDTO obtenerDetalle(Long citaId, Long clienteId) {
+        if (clienteId == null) {
+            throw new ClienteNoAutenticadoException(
+                    "Debe enviar el parámetro documentoIdentidad para identificar al cliente");
+        }
+
+        Cita cita = citaRepository.findById(citaId)
+                .filter(c -> c.getCliente().getId().equals(clienteId))
+                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + citaId));
+
+        Mascota mascota = cita.getMascota();
+        Servicio servicio = cita.getServicio();
+        Veterinario veterinario = cita.getVeterinario();
+
+        String indicaciones = servicio.getIndicacionesPrevias();
+        if (indicaciones == null || indicaciones.isBlank()) {
+            indicaciones = SIN_INDICACIONES;
+        }
+
+        return CitaDetalleDTO.builder()
+                .id(cita.getId())
+                .codigo("VA-" + String.format("%04d", cita.getId()))
+                .estado(cita.getEstado())
+                .fechaHoraInicio(cita.getFechaHoraInicio())
+                .fechaHoraFin(cita.getFechaHoraFin())
+                .puedeCancelarse(sePuedeCancelar(cita))
+                .mascota(CitaDetalleDTO.MascotaInfo.builder()
+                        .id(mascota.getId())
+                        .nombre(mascota.getNombre())
+                        .especie(mascota.getEspecie())
+                        .raza(mascota.getRaza())
+                        .edad(mascota.getEdad())
+                        .sexo(mascota.getSexo())
+                        .build())
+                .servicio(CitaDetalleDTO.ServicioInfo.builder()
+                        .id(servicio.getId())
+                        .nombre(servicio.getNombre())
+                        .categoria(servicio.getCategoria())
+                        .precio(servicio.getPrecio())
+                        .duracionMinutos(servicio.getDuracionMinutos())
+                        .indicacionesPrevias(indicaciones)
+                        .build())
+                .profesional(CitaDetalleDTO.ProfesionalInfo.builder()
+                        .id(veterinario.getId())
+                        .nombre(veterinario.getNombre())
+                        .especialidad(veterinario.getEspecialidad())
+                        .fotoUrl(veterinario.getFotoUrl())
+                        .build())
+                .build();
+    }
+
+    private boolean sePuedeCancelar(Cita cita) {
+        return ESTADO_CONFIRMADA.equals(cita.getEstado())
+                && !cita.getFechaHoraInicio()
+                        .isBefore(LocalDateTime.now(clock).plusHours(HORAS_MINIMAS_CANCELACION));
     }
 }
