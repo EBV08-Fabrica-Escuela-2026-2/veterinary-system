@@ -194,10 +194,33 @@ curl "http://localhost:8080/api/mascotas?documentoIdentidad=1020304050"
 
 | Método | Ruta | Estado |
 |---|---|---|
-| `POST` | `/api/auth/login` | Pendiente; devuelve un token de ejemplo |
-| `POST` | `/api/auth/register` | Pendiente de implementación |
+| `POST` | `/api/auth/register` | Registra credenciales para un cliente existente |
+| `POST` | `/api/auth/login` | Valida credenciales y entrega un JWT |
 
-Los endpoints actuales de catálogo, clientes, veterinarios, servicios y mascotas son públicos. Todavía no existe un filtro JWT que proteja las solicitudes.
+Para registrar una cuenta, el correo y el documento deben coincidir con un cliente ya registrado. La contraseña se guarda usando BCrypt.
+
+```json
+{
+  "correo": "alex@gmail.com",
+  "documentoIdentidad": "12345678",
+  "password": "ClaveSegura123"
+}
+```
+
+Envía ese cuerpo a `POST /api/auth/register`. Luego inicia sesión con:
+
+```json
+{
+  "correo": "alex@gmail.com",
+  "password": "ClaveSegura123"
+}
+```
+
+La respuesta de `POST /api/auth/login` contiene `token` y `tipoToken: "Bearer"`. En Swagger, pulsa **Authorize** y pega únicamente el valor de `token`; después podrás llamar los endpoints protegidos de reprogramación de citas. El filtro JWT valida la firma y expiración del token y solo autentica clientes activos.
+
+El secreto JWT debe configurarse mediante `APP_JWT_SECRET` en cualquier entorno compartido o de producción; el valor predeterminado de `application.yml` es solo para desarrollo.
+
+Los endpoints de catálogo, clientes, veterinarios, servicios y mascotas siguen siendo públicos. Las rutas de reprogramación de citas requieren un JWT válido.
 
 ## Documentación de la API
 

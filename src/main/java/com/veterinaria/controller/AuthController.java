@@ -1,28 +1,31 @@
 package com.veterinaria.controller;
 
+import com.veterinaria.dto.AuthResponseDTO;
+import com.veterinaria.dto.LoginAuthDTO;
+import com.veterinaria.dto.RegistroAuthDTO;
+import com.veterinaria.service.AuthService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
+    private final AuthService authService;
+
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> request) {
-        // TODO: Implement JWT authentication when user management is added
-        return ResponseEntity.ok(Map.of(
-            "mensaje", "Endpoint de login preparado - pendiente implementación",
-            "token", "placeholder-jwt-token"
-        ));
+    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginAuthDTO solicitud) {
+        return ResponseEntity.ok(authService.iniciarSesion(solicitud));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@RequestBody Map<String, String> request) {
-        // TODO: Implement user registration when user management is added
-        return ResponseEntity.ok(Map.of(
-            "mensaje", "Endpoint de registro preparado - pendiente implementación"
-        ));
+    public ResponseEntity<AuthResponseDTO> register(@Valid @RequestBody RegistroAuthDTO solicitud) {
+        return ResponseEntity.status(201).body(authService.registrar(solicitud));
     }
 }

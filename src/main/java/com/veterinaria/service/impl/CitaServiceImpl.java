@@ -2,7 +2,11 @@ package com.veterinaria.service.impl;
 
 import com.veterinaria.dto.CancelacionCitaDTO;
 import com.veterinaria.dto.CitaClienteDTO;
+import com.veterinaria.dto.CitaDetalleDTO;
 import com.veterinaria.dto.CitaRegistroDTO;
+import com.veterinaria.dto.DisponibilidadDiaDTO;
+import com.veterinaria.dto.ReprogramacionCitaResponseDTO;
+import com.veterinaria.dto.ReprogramarCitaRequestDTO;
 import com.veterinaria.exception.CancelacionNoPermitidaException;
 import com.veterinaria.exception.CitaNoDisponibleException;
 import com.veterinaria.exception.ClienteNoAutenticadoException;
@@ -18,12 +22,11 @@ import com.veterinaria.repository.MascotaRepository;
 import com.veterinaria.repository.ServicioRepository;
 import com.veterinaria.repository.VeterinarioRepository;
 import com.veterinaria.service.CitaService;
+import com.veterinaria.service.DisponibilidadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.veterinaria.dto.CitaDetalleDTO;
-
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,12 +40,15 @@ public class CitaServiceImpl implements CitaService {
     public static final String ESTADO_ANULADA = "ANULADA";
     private static final long HORAS_MINIMAS_CANCELACION = 2;
     private static final String SIN_INDICACIONES = "No hay indicaciones especiales";
+    private static final long HORAS_MINIMAS_REPROGRAMACION = 4;
+    private static final String MENSAJE_ANTICIPACION_REPROGRAMACION = "No es posible reprogramar la cita con cuatro horas o menos de antelación. Por políticas de la clínica, debes comunicarte directamente por vía telefónica.";
 
     private final CitaRepository citaRepository;
     private final ClienteRepository clienteRepository;
     private final MascotaRepository mascotaRepository;
     private final VeterinarioRepository veterinarioRepository;
     private final ServicioRepository servicioRepository;
+    private final DisponibilidadService disponibilidadService;
     private final Clock clock;
 
     @Override
@@ -159,6 +165,86 @@ public class CitaServiceImpl implements CitaService {
         dto.setFechaHoraInicio(cita.getFechaHoraInicio());
         dto.setFechaHoraFin(cita.getFechaHoraFin());
         return dto;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DisponibilidadDiaDTO consultarDisponibilidadReprogramacion(Long citaId, Long clienteId, java.time.LocalDate fecha) {
+        Cita cita = buscarCitaPropia(citaId, clienteId, false);
+        validarEstadoReprogramable(cita);
+        return disponibilidadService.consultarDisponibilidad(cita.getServicio().getId(),
+                cita.getVeterinario().getId(), fecha, cita.getId());
+    }
+
+    @Override
+    @Transactional
+    public ReprogramacionCitaResponseDTO reprogramarCita(Long citaId, Long clienteId,
+            ReprogramarCitaRequestDTO solicitud) {
+        if (solicitud == null || solicitud.getNuevaFecha() == null || solicitud.getNuevaHoraInicio() == null) {
+            throw new IllegalArgumentException("La nueva fecha y hora de inicio son obligatorias");
+        }
+
+        Cita cita = buscarCitaPropia(citaId, clienteId, true);
+        validarReprogramable(cita);
+
+        LocalDateTime nuevoInicio = solicitud.getNuevaFecha().atTime(solicitud.getNuevaHoraInicio());
+        if (!nuevoInicio.isAfter(LocalDateTime.now(clock))) {
+            throw new IllegalArgumentException("La nueva fecha y hora deben ser futuras");
+        }
+        if (nuevoInicio.equals(cita.getFechaHoraInicio())) {
+            throw new IllegalArgumentException("La nueva fecha y hora coinciden con la cita actual");
+        }
+
+        DisponibilidadDiaDTO disponibilidad = disponibilidadService.consultarDisponibilidad(
+                cita.getServicio().getId(), cita.getVeterinario().getId(), solicitud.getNuevaFecha(), cita.getId());
+        boolean franjaDisponible = disponibilidad.getHorariosDisponibles().stream()
+                .anyMatch(franja -> franja.getHoraInicio().equals(solicitud.getNuevaHoraInicio()));
+        if (!franjaDisponible) {
+            throw new CitaNoDisponibleException("El horario seleccionado no está disponible para ese profesional");
+        }
+
+        LocalDateTime fechaHoraAnterior = cita.getFechaHoraInicio();
+        int duracion = cita.getServicio().getDuracionMinutos() == null || cita.getServicio().getDuracionMinutos() <= 0
+                ? 30
+                : cita.getServicio().getDuracionMinutos();
+        cita.setFechaHoraInicio(nuevoInicio);
+        cita.setFechaHoraFin(nuevoInicio.plusMinutes(duracion));
+
+        try {
+            citaRepository.saveAndFlush(cita);
+        } catch (DataIntegrityViolationException ex) {
+            throw new CitaNoDisponibleException(
+                    "El veterinario ya tiene una cita que se solapa con el horario solicitado");
+        }
+
+        return new ReprogramacionCitaResponseDTO("La cita se ha reprogramado correctamente", fechaHoraAnterior,
+                toCitaClienteDTO(cita));
+    }
+
+    private Cita buscarCitaPropia(Long citaId, Long clienteId, boolean bloquear) {
+        if (clienteId == null) {
+            throw new ClienteNoAutenticadoException("Se requiere un cliente autenticado");
+        }
+        Cita cita = (bloquear ? citaRepository.findByIdForUpdate(citaId) : citaRepository.findById(citaId))
+                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
+        if (!cita.getCliente().getId().equals(clienteId)) {
+            throw new ResourceNotFoundException("Cita no encontrada");
+        }
+        return cita;
+    }
+
+    private void validarReprogramable(Cita cita) {
+        validarEstadoReprogramable(cita);
+        if (!cita.getFechaHoraInicio()
+                .isAfter(LocalDateTime.now(clock).plusHours(HORAS_MINIMAS_REPROGRAMACION))) {
+            throw new IllegalArgumentException(MENSAJE_ANTICIPACION_REPROGRAMACION);
+        }
+    }
+
+    private void validarEstadoReprogramable(Cita cita) {
+        if (!ESTADO_CONFIRMADA.equals(cita.getEstado())) {
+            throw new IllegalArgumentException("Solo se pueden reprogramar citas activas en estado CONFIRMADA");
+        }
     }
 
     private CitaClienteDTO toCitaClienteDTO(Cita cita) {
