@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.veterinaria.dto.CitaDetalleDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -88,5 +89,20 @@ public class CitaController {
                         "Cliente no encontrado con documento: " + documentoIdentidad));
 
         return ResponseEntity.ok(citaService.cancelarCita(idCita, cliente.getId()));
+    }
+        @GetMapping("/{idCita}")
+    @Operation(summary = "Consultar detalle de una cita", description = "Devuelve mascota, servicio, profesional, fecha, costo e indicaciones previas de una cita del cliente identificado por su documento de identidad", responses = {
+            @ApiResponse(responseCode = "200", description = "Detalle obtenido exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Cliente no encontrado"),
+            @ApiResponse(responseCode = "404", description = "Cita no encontrada para este cliente")
+    })
+    public ResponseEntity<CitaDetalleDTO> obtenerDetalle(
+            @Parameter(description = "Id de la cita") @PathVariable Long idCita,
+            @Parameter(description = "Documento de identidad del cliente") @RequestParam("documentoIdentidad") String documentoIdentidad) {
+        Cliente cliente = clienteRepository.findByDocumentoIdentidad(documentoIdentidad)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Cliente no encontrado con documento: " + documentoIdentidad));
+
+        return ResponseEntity.ok(citaService.obtenerDetalle(idCita, cliente.getId()));
     }
 }

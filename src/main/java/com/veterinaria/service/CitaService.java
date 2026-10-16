@@ -2,6 +2,7 @@ package com.veterinaria.service;
 
 import com.veterinaria.dto.CancelacionCitaDTO;
 import com.veterinaria.dto.CitaClienteDTO;
+import com.veterinaria.dto.CitaDetalleDTO;
 import com.veterinaria.dto.CitaRegistroDTO;
 import com.veterinaria.model.Cita;
 
@@ -13,4 +14,6 @@ public interface CitaService {
     List<CitaClienteDTO> listarCitasPorCliente(Long clienteId);
 
     CancelacionCitaDTO cancelarCita(Long citaId, Long clienteId);
+
+    CitaDetalleDTO obtenerDetalle(Long citaId, Long clienteId);
 }
