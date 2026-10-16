@@ -111,10 +111,9 @@ public class CitaController {
     })
     public ResponseEntity<CitaDetalleDTO> obtenerDetalle(
             @Parameter(description = "Id de la cita") @PathVariable Long idCita,
-            @Parameter(description = "Documento de identidad del cliente") @RequestParam("documentoIdentidad") String documentoIdentidad) {
-        Cliente cliente = clienteRepository.findByDocumentoIdentidad(documentoIdentidad)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Cliente no encontrado con documento: " + documentoIdentidad));
+            @Parameter(description = "Documento de identidad del cliente") @RequestParam(value = "documentoIdentidad", required = false) String documentoIdentidad,
+            Authentication authentication) {
+        Cliente cliente = clienteAutenticadoOIdentificado(authentication, documentoIdentidad);
 
         return ResponseEntity.ok(citaService.obtenerDetalle(idCita, cliente.getId()));
     }
@@ -155,5 +154,19 @@ public class CitaController {
             throw new AccessDeniedException("El cliente no se encuentra activo");
         }
         return cliente;
+    }
+
+    private Cliente clienteAutenticadoOIdentificado(Authentication authentication, String documentoIdentidad) {
+        if (authentication != null && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken)) {
+            return obtenerClienteAutenticado(authentication);
+        }
+        if (documentoIdentidad == null || documentoIdentidad.isBlank()) {
+            throw new ClienteNoAutenticadoException(
+                    "Se requiere iniciar sesión o indicar el documento de identidad");
+        }
+        return clienteRepository.findByDocumentoIdentidad(documentoIdentidad.trim())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Cliente no encontrado con documento: " + documentoIdentidad));
     }
 }
