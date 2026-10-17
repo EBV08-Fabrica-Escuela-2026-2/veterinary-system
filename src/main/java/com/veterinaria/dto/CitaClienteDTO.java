@@ -13,6 +13,8 @@ public class CitaClienteDTO {
     private String estado;
     private String etiquetaEstado;
     private boolean cupoLiberado;
+    private String motivoCancelacion;
+    private LocalDateTime canceladaAt;
     private LocalDateTime createdAt;
 
     public CitaClienteDTO() {
@@ -88,6 +90,22 @@ public class CitaClienteDTO {
 
     public void setCupoLiberado(boolean cupoLiberado) {
         this.cupoLiberado = cupoLiberado;
+    }
+
+    public String getMotivoCancelacion() {
+        return motivoCancelacion;
+    }
+
+    public void setMotivoCancelacion(String motivoCancelacion) {
+        this.motivoCancelacion = motivoCancelacion;
+    }
+
+    public LocalDateTime getCanceladaAt() {
+        return canceladaAt;
+    }
+
+    public void setCanceladaAt(LocalDateTime canceladaAt) {
+        this.canceladaAt = canceladaAt;
     }
 
     public LocalDateTime getCreatedAt() {

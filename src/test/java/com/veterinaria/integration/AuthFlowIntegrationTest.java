@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +29,9 @@ class AuthFlowIntegrationTest {
 
     @Autowired
     private ClienteRepository clienteRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
         @LocalServerPort
         private int port;
@@ -72,6 +76,14 @@ class AuthFlowIntegrationTest {
 
         HttpResponse<String> conToken = enviarGet("/api/citas/999/disponibilidad?fecha=2026-10-20", token);
         assertThat(conToken.statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void credencialSembradaDeCarolinaUsaUnHashBcryptValido() {
+        assertThat(passwordEncoder.matches(
+                "Demo2026!",
+                "$2y$10$RnNxY7Vyu9xDwJk0wjXKYeht3z7GDYVCsM0HEOWQh.E96j/ryyxiS"))
+                .isTrue();
     }
 
     private HttpResponse<String> enviarJson(String path, Object body, String token) throws Exception {

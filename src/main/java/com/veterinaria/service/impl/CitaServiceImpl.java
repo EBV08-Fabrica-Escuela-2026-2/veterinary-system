@@ -259,6 +259,8 @@ public class CitaServiceImpl implements CitaService {
         dto.setEstado(cita.getEstado());
         dto.setEtiquetaEstado(etiquetaEstado(cita.getEstado()));
         dto.setCupoLiberado(cupoLiberado(cita.getEstado()));
+        dto.setMotivoCancelacion(cita.getMotivoCancelacion());
+        dto.setCanceladaAt(cita.getCanceladaAt());
         dto.setCreatedAt(cita.getCreatedAt());
         return dto;
     }
