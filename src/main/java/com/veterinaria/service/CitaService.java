@@ -24,4 +24,6 @@ public interface CitaService {
     DisponibilidadDiaDTO consultarDisponibilidadReprogramacion(Long citaId, Long clienteId, LocalDate fecha);
 
     ReprogramacionCitaResponseDTO reprogramarCita(Long citaId, Long clienteId, ReprogramarCitaRequestDTO solicitud);
+
+    CancelacionCitaDTO cancelarCitaPorVeterinario(Long citaId, Long veterinarioId, String motivo);
 }

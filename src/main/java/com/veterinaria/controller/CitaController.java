@@ -12,6 +12,9 @@ import com.veterinaria.model.Cita;
 import com.veterinaria.model.Cliente;
 import com.veterinaria.repository.ClienteRepository;
 import com.veterinaria.service.CitaService;
+import com.veterinaria.dto.CancelacionVeterinarioDTO;
+import com.veterinaria.model.Veterinario;
+import com.veterinaria.repository.VeterinarioRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -48,6 +51,7 @@ public class CitaController {
 
     private final CitaService citaService;
     private final ClienteRepository clienteRepository;
+    private final VeterinarioRepository veterinarioRepository;
 
     @PostMapping
     @Operation(summary = "Reservar una cita", description = "Registra una cita para una mascota del cliente, identificado por su documento de identidad", responses = {
@@ -103,6 +107,7 @@ public class CitaController {
 
         return ResponseEntity.ok(citaService.cancelarCita(idCita, cliente.getId()));
     }
+    
     @GetMapping("/{idCita}")
     @Operation(summary = "Consultar detalle de una cita", description = "Devuelve mascota, servicio, profesional, fecha, costo e indicaciones previas de una cita del cliente identificado por su documento de identidad", responses = {
             @ApiResponse(responseCode = "200", description = "Detalle obtenido exitosamente"),
@@ -168,5 +173,23 @@ public class CitaController {
         return clienteRepository.findByDocumentoIdentidad(documentoIdentidad.trim())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Cliente no encontrado con documento: " + documentoIdentidad));
+    }
+
+    @PatchMapping("/{idCita}/cancelar-veterinario")
+    @Operation(summary = "Cancelar una cita como veterinario", description = "El veterinario cancela una cita confirmada suya indicando el motivo obligatorio. Libera el horario y registra la auditoría.", responses = {
+            @ApiResponse(responseCode = "200", description = "Cita cancelada exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Motivo vacío, mayor a 240 caracteres o veterinario no encontrado"),
+            @ApiResponse(responseCode = "404", description = "Cita no encontrada para este veterinario"),
+            @ApiResponse(responseCode = "409", description = "La cita ya está completada, cancelada o ya inició")
+    })
+    public ResponseEntity<CancelacionCitaDTO> cancelarCitaPorVeterinario(
+            @Parameter(description = "Id de la cita a cancelar") @PathVariable Long idCita,
+            @Parameter(description = "Documento de identidad del veterinario") @RequestParam("documentoIdentidad") String documentoIdentidad,
+            @Valid @RequestBody CancelacionVeterinarioDTO dto) {
+        Veterinario veterinario = veterinarioRepository.findByDocumentoIdentidad(documentoIdentidad)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Veterinario no encontrado con documento: " + documentoIdentidad));
+
+        return ResponseEntity.ok(citaService.cancelarCitaPorVeterinario(idCita, veterinario.getId(), dto.getMotivo()));
     }
 }

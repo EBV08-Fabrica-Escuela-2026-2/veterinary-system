@@ -38,6 +38,7 @@ public class CitaServiceImpl implements CitaService {
 
     public static final String ESTADO_CONFIRMADA = "CONFIRMADA";
     public static final String ESTADO_ANULADA = "ANULADA";
+    public static final String ESTADO_CANCELADA_PROFESIONAL = "CANCELADA_PROFESIONAL";
     private static final long HORAS_MINIMAS_CANCELACION = 2;
     private static final String SIN_INDICACIONES = "No hay indicaciones especiales";
     private static final long HORAS_MINIMAS_REPROGRAMACION = 4;
@@ -269,11 +270,14 @@ public class CitaServiceImpl implements CitaService {
         if (ESTADO_ANULADA.equals(estado)) {
             return "Anulada";
         }
+        if (ESTADO_CANCELADA_PROFESIONAL.equals(estado)) {
+            return "Cancelada";
+        }
         return estado;
     }
 
     private boolean cupoLiberado(String estado) {
-        return ESTADO_ANULADA.equals(estado);
+        return ESTADO_ANULADA.equals(estado) || ESTADO_CANCELADA_PROFESIONAL.equals(estado);
     }
     
     @Override
@@ -333,5 +337,37 @@ public class CitaServiceImpl implements CitaService {
         return ESTADO_CONFIRMADA.equals(cita.getEstado())
                 && !cita.getFechaHoraInicio()
                         .isBefore(LocalDateTime.now(clock).plusHours(HORAS_MINIMAS_CANCELACION));
+    }
+
+    @Override
+    @Transactional
+    public CancelacionCitaDTO cancelarCitaPorVeterinario(Long citaId, Long veterinarioId, String motivo) {
+        Cita cita = citaRepository.findByIdForUpdate(citaId)
+                .filter(c -> c.getVeterinario().getId().equals(veterinarioId))
+                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + citaId));
+
+        if (!ESTADO_CONFIRMADA.equals(cita.getEstado())) {
+            throw new CancelacionNoPermitidaException(
+                    "La cita ya fue completada o cancelada y no puede modificarse");
+        }
+        if (!cita.getFechaHoraInicio().isAfter(LocalDateTime.now(clock))) {
+            throw new CancelacionNoPermitidaException("No se puede cancelar una cita que ya inició");
+        }
+
+        cita.setEstado(ESTADO_CANCELADA_PROFESIONAL);
+        cita.setMotivoCancelacion(motivo.trim());
+        cita.setCanceladaPorVeterinario(cita.getVeterinario());
+        cita.setCanceladaAt(LocalDateTime.now(clock));
+        citaRepository.save(cita);
+
+        CancelacionCitaDTO dto = new CancelacionCitaDTO();
+        dto.setMensaje("Cita cancelada exitosamente. El horario fue liberado y se notificará a las partes.");
+        dto.setIdCita(cita.getId());
+        dto.setEstado(cita.getEstado());
+        dto.setEtiquetaEstado(etiquetaEstado(cita.getEstado()));
+        dto.setCupoLiberado(cupoLiberado(cita.getEstado()));
+        dto.setFechaHoraInicio(cita.getFechaHoraInicio());
+        dto.setFechaHoraFin(cita.getFechaHoraFin());
+        return dto;
     }
 }
