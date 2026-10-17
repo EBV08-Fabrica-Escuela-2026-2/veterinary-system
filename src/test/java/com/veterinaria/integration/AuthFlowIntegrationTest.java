@@ -86,6 +86,18 @@ class AuthFlowIntegrationTest {
                 .isTrue();
     }
 
+    @Test
+    void reservarCitaExigeAutenticacion() throws Exception {
+        HttpResponse<String> response = enviarJson("/api/citas", Map.of(
+                "mascotaId", 1,
+                "veterinarioId", 1,
+                "servicioId", 1,
+                "fechaHoraInicio", "2026-10-23T09:00:00"), null);
+
+        assertThat(response.statusCode()).isEqualTo(401);
+        assertThat(response.body()).contains("Se requiere iniciar sesión");
+    }
+
     private HttpResponse<String> enviarJson(String path, Object body, String token) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder(uri(path))
                 .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)

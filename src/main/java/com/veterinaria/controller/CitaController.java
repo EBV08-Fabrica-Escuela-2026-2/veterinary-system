@@ -54,18 +54,18 @@ public class CitaController {
     private final VeterinarioRepository veterinarioRepository;
 
     @PostMapping
-    @Operation(summary = "Reservar una cita", description = "Registra una cita para una mascota del cliente, identificado por su documento de identidad", responses = {
+    @Operation(summary = "Reservar una cita", description = "Registra una cita para el cliente autenticado", responses = {
+            @ApiResponse(responseCode = "401", description = "Se requiere iniciar sesión como cliente"),
             @ApiResponse(responseCode = "201", description = "Cita reservada exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos, entidades inactivas o mascota/servicio que no corresponden"),
             @ApiResponse(responseCode = "404", description = "Cliente, mascota, veterinario o servicio no encontrado"),
             @ApiResponse(responseCode = "409", description = "El veterinario ya tiene una cita confirmada en ese horario")
     })
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Map<String, Object>> reservarCita(
             @Valid @RequestBody CitaRegistroDTO dto,
-            @Parameter(description = "Documento de identidad del cliente") @RequestParam("documentoIdentidad") String documentoIdentidad) {
-        Cliente cliente = clienteRepository.findByDocumentoIdentidad(documentoIdentidad)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Cliente no encontrado con documento: " + documentoIdentidad));
+            Authentication authentication) {
+        Cliente cliente = obtenerClienteAutenticado(authentication);
 
         Cita cita = citaService.reservarCita(dto, cliente.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
