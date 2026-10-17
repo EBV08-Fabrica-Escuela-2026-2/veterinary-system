@@ -1,10 +1,12 @@
 package com.veterinaria.service;
 
+import com.veterinaria.dto.CancelacionCitaDTO;
 import com.veterinaria.dto.DisponibilidadDiaDTO;
 import com.veterinaria.dto.FranjaHorariaDTO;
 import com.veterinaria.dto.ReprogramacionCitaResponseDTO;
 import com.veterinaria.dto.ReprogramarCitaRequestDTO;
 import com.veterinaria.exception.CitaNoDisponibleException;
+import com.veterinaria.exception.CancelacionNoPermitidaException;
 import com.veterinaria.exception.ResourceNotFoundException;
 import com.veterinaria.model.Cita;
 import com.veterinaria.model.Cliente;
@@ -34,6 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -147,6 +150,45 @@ class CitaServiceImplTest {
                         solicitud(LocalDate.of(2026, 10, 16), LocalTime.of(9, 0))));
 
         verify(citaRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void cancelarCitaPorVeterinario_cancelaLaCitaYLiberaElCupo() {
+        configurarReloj();
+        Cita cita = crearCita(AHORA.plusHours(5));
+        when(citaRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(cita));
+
+        CancelacionCitaDTO resultado = citaService.cancelarCitaPorVeterinario(7L, 4L, "  Emergencia  ");
+
+        assertEquals(CitaServiceImpl.ESTADO_CANCELADA_PROFESIONAL, cita.getEstado());
+        assertEquals("Emergencia", cita.getMotivoCancelacion());
+        assertSame(cita.getVeterinario(), cita.getCanceladaPorVeterinario());
+        assertEquals(AHORA, cita.getCanceladaAt());
+        assertEquals(CitaServiceImpl.ESTADO_CANCELADA_PROFESIONAL, resultado.getEstado());
+        assertTrue(resultado.isCupoLiberado());
+        verify(citaRepository).save(cita);
+    }
+
+    @Test
+    void cancelarCitaPorVeterinario_noRevelaCitasDeOtroVeterinario() {
+        when(citaRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(crearCita(AHORA.plusHours(5))));
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> citaService.cancelarCitaPorVeterinario(7L, 99L, "Emergencia"));
+
+        verify(citaRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelarCitaPorVeterinario_rechazaUnaCitaQueYaNoEstaConfirmada() {
+        Cita cita = crearCita(AHORA.plusHours(5));
+        cita.setEstado(CitaServiceImpl.ESTADO_ANULADA);
+        when(citaRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(cita));
+
+        assertThrows(CancelacionNoPermitidaException.class,
+                () -> citaService.cancelarCitaPorVeterinario(7L, 4L, "Emergencia"));
+
+        verify(citaRepository, never()).save(any());
     }
 
     private Cita crearCita(LocalDateTime inicio) {
