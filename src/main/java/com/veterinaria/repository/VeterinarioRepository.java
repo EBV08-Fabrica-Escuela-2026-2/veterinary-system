@@ -1,6 +1,7 @@
 package com.veterinaria.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,4 +15,6 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
     boolean existsByDocumentoIdentidad(String documentoIdentidad);
 
     boolean existsByCorreo(String correo);
+
+    Optional<Veterinario> findByDocumentoIdentidad(String documentoIdentidad);
 }
