@@ -58,6 +58,15 @@ class AuthFlowIntegrationTest {
         JsonNode response = objectMapper.readTree(login.body());
         String token = response.path("token").asText();
 
+        HttpResponse<String> perfilSinToken = enviarGet("/api/auth/me", null);
+        assertThat(perfilSinToken.statusCode()).isEqualTo(401);
+
+        HttpResponse<String> perfilConToken = enviarGet("/api/auth/me", token);
+        assertThat(perfilConToken.statusCode()).isEqualTo(200);
+        JsonNode perfil = objectMapper.readTree(perfilConToken.body());
+        assertThat(perfil.path("correo").asText()).isEqualTo(correo);
+        assertThat(perfil.path("documentoIdentidad").asText()).isEqualTo(documento);
+
         HttpResponse<String> sinToken = enviarGet("/api/citas/999/disponibilidad?fecha=2026-10-20", null);
         assertThat(sinToken.statusCode()).isEqualTo(401);
 

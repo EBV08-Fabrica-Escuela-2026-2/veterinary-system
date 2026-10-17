@@ -1,6 +1,7 @@
 package com.veterinaria.service;
 
 import com.veterinaria.dto.AuthResponseDTO;
+import com.veterinaria.dto.ClienteResponseDTO;
 import com.veterinaria.dto.LoginAuthDTO;
 import com.veterinaria.dto.RegistroAuthDTO;
 import com.veterinaria.exception.ClienteNoAutenticadoException;
@@ -91,6 +92,27 @@ class AuthServiceImplTest {
         assertThrows(ClienteNoAutenticadoException.class, () -> authService.iniciarSesion(login()));
 
         verify(jwtTokenService, never()).generarToken("alex@gmail.com");
+    }
+
+    @Test
+    void obtenerPerfil_devuelveElClienteAutenticado() {
+        Cliente cliente = Cliente.builder()
+                .id(1L)
+                .nombre("Alex Gómez")
+                .documentoIdentidad("12345678")
+                .telefono("3001234567")
+                .correo("alex@gmail.com")
+                .direccion("Calle 10")
+                .activo(true)
+                .build();
+        when(clienteRepository.findByCorreoIgnoreCase("alex@gmail.com")).thenReturn(Optional.of(cliente));
+
+        ClienteResponseDTO response = authService.obtenerPerfil("alex@gmail.com");
+
+        assertEquals(1L, response.getId());
+        assertEquals("Alex Gómez", response.getNombre());
+        assertEquals("12345678", response.getDocumentoIdentidad());
+        assertEquals("alex@gmail.com", response.getCorreo());
     }
 
     private RegistroAuthDTO registro() {

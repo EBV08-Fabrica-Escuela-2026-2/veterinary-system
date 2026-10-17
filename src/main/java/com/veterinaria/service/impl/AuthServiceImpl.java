@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.veterinaria.dto.AuthResponseDTO;
+import com.veterinaria.dto.ClienteResponseDTO;
 import com.veterinaria.dto.LoginAuthDTO;
 import com.veterinaria.dto.RegistroAuthDTO;
 import com.veterinaria.exception.ClienteNoAutenticadoException;
@@ -69,6 +70,24 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtTokenService.generarToken(cliente.getCorreo());
         return new AuthResponseDTO("Inicio de sesión exitoso", token, "Bearer",
                 jwtTokenService.getExpiracionMs());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ClienteResponseDTO obtenerPerfil(String correo) {
+        Cliente cliente = clienteRepository.findByCorreoIgnoreCase(correo)
+                .filter(c -> Boolean.TRUE.equals(c.getActivo()))
+                .orElseThrow(this::credencialesInvalidas);
+
+        return ClienteResponseDTO.builder()
+                .id(cliente.getId())
+                .nombre(cliente.getNombre())
+                .documentoIdentidad(cliente.getDocumentoIdentidad())
+                .telefono(cliente.getTelefono())
+                .correo(cliente.getCorreo())
+                .direccion(cliente.getDireccion())
+                .activo(cliente.getActivo())
+                .build();
     }
 
     private ClienteNoAutenticadoException credencialesInvalidas() {
