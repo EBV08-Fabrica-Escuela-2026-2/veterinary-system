@@ -53,7 +53,17 @@ public class Cita {
     @Column(name = "fecha_hora_fin", nullable = false)
     private LocalDateTime fechaHoraFin;
 
-    @Column(nullable = false, length = 20)
+    @Column(name = "motivo_cancelacion", length = 240)
+    private String motivoCancelacion;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cancelada_por_veterinario_id")
+    private Veterinario canceladaPorVeterinario;
+
+    @Column(name = "cancelada_at")
+    private LocalDateTime canceladaAt;
+
+    @Column(nullable = false, length = 30)
     @Builder.Default
     private String estado = "CONFIRMADA";
 
