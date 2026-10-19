@@ -222,6 +222,41 @@ El secreto JWT debe configurarse mediante `APP_JWT_SECRET` en cualquier entorno 
 
 Los endpoints de catálogo, clientes, veterinarios, servicios y mascotas siguen siendo públicos. Las rutas de reprogramación de citas requieren un JWT válido.
 
+### Portal del veterinario: disponibilidad
+
+Requieren el JWT de un veterinario activo (`ROLE_VETERINARIO`): sin token responden `401` y con el token de un cliente `403`. El veterinario siempre se toma del token, nunca del cuerpo. Los días viajan en español (`LUNES`, `MARTES`, `MIERCOLES`, `JUEVES`, `VIERNES`, `SABADO`, `DOMINGO`) y las horas como `HH:mm`.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/api/veterinario-portal/disponibilidad` | Devuelve los siete días con sus franjas activas |
+| `PUT` | `/api/veterinario-portal/disponibilidad` | Reemplaza todas las franjas (los ids cambian). Agrupa los días repetidos e ignora los días con `activo: false` |
+| `POST` | `/api/veterinario-portal/disponibilidad/franjas` | Agrega una franja sin tocar las demás (`201`) |
+| `PUT` | `/api/veterinario-portal/disponibilidad/franjas/{franjaId}` | Edita día y horas de una franja propia |
+| `DELETE` | `/api/veterinario-portal/disponibilidad/franjas/{franjaId}` | Elimina una franja propia |
+
+Ejemplo de alta y de edición (mismo cuerpo):
+
+```bash
+curl -X POST http://localhost:8080/api/veterinario-portal/disponibilidad/franjas \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "dia": "LUNES", "horaInicio": "14:00", "horaFin": "16:00" }'
+```
+
+```json
+{ "id": 21, "dia": "LUNES", "horaInicio": "14:00:00", "horaFin": "16:00:00" }
+```
+
+Reglas y errores:
+
+| Código | Cuándo |
+|---|---|
+| `400` | Día no válido, horas faltantes o mal formadas, o la hora final no es posterior a la inicial |
+| `404` | La franja no existe o pertenece a otro veterinario |
+| `409` | La franja se traslapa con otra franja activa del mismo veterinario y día |
+
+Las franjas se manejan como intervalos `[inicio, fin)`: dos franjas contiguas (08:00-12:00 y 12:00-14:00) son válidas. La regla también está protegida en la base de datos con la restricción `no_traslape_horario` (migración `V15`), por lo que dos solicitudes simultáneas no pueden dejar franjas solapadas.
+
 ## Documentación de la API
 
 Con la aplicación en ejecución:
