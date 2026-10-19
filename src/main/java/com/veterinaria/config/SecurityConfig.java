@@ -59,8 +59,16 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
                             response.getWriter().write(
                                     "{\"error\": \"No autenticado\", \"mensaje\": \"Se requiere iniciar sesión\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
+                            response.getWriter().write(
+                                    "{\"error\": \"Acceso denegado\", \"mensaje\": \"No tienes permisos para esta acción\"}");
                         }))
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService, clienteRepository, veterinarioRepository),
                         UsernamePasswordAuthenticationFilter.class);
