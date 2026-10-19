@@ -185,10 +185,15 @@ public class CitaController {
     public ResponseEntity<CancelacionCitaDTO> cancelarCitaPorVeterinario(
             @Parameter(description = "Id de la cita a cancelar") @PathVariable Long idCita,
             @Parameter(description = "Documento de identidad del veterinario") @RequestParam("documentoIdentidad") String documentoIdentidad,
-            @Valid @RequestBody CancelacionVeterinarioDTO dto) {
+            @Valid @RequestBody CancelacionVeterinarioDTO dto,
+            Authentication authentication) {
         Veterinario veterinario = veterinarioRepository.findByDocumentoIdentidad(documentoIdentidad)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Veterinario no encontrado con documento: " + documentoIdentidad));
+        if (authentication == null || !authentication.isAuthenticated()
+                || !veterinario.getCorreo().equalsIgnoreCase(authentication.getName())) {
+            throw new AccessDeniedException("Solo el veterinario asignado puede cancelar esta cita");
+        }
 
         return ResponseEntity.ok(citaService.cancelarCitaPorVeterinario(idCita, veterinario.getId(), dto.getMotivo()));
     }

@@ -17,4 +17,6 @@ public interface VeterinarioRepository extends JpaRepository<Veterinario, Long> 
     boolean existsByCorreo(String correo);
 
     Optional<Veterinario> findByDocumentoIdentidad(String documentoIdentidad);
+
+    Optional<Veterinario> findByCorreoIgnoreCase(String correo);
 }

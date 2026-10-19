@@ -23,6 +23,8 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
 
     List<Cita> findByClienteIdOrderByFechaHoraInicioDesc(Long clienteId);
 
+    List<Cita> findByVeterinarioIdOrderByFechaHoraInicioDesc(Long veterinarioId);
+
         @Lock(LockModeType.PESSIMISTIC_WRITE)
         @Query("select c from Cita c where c.id = :id")
         Optional<Cita> findByIdForUpdate(@Param("id") Long id);

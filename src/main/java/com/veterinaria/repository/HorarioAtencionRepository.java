@@ -10,4 +10,8 @@ import java.util.List;
 @Repository
 public interface HorarioAtencionRepository extends JpaRepository<HorarioAtencion, Long> {
     List<HorarioAtencion> findByVeterinarioIdAndDiaSemanaAndActivoTrue(Long veterinarioId, DayOfWeek diaSemana);
+
+    List<HorarioAtencion> findByVeterinarioIdAndActivoTrueOrderByDiaSemanaAscHoraInicioAsc(Long veterinarioId);
+
+    void deleteByVeterinarioId(Long veterinarioId);
 }

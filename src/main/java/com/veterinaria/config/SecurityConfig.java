@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.veterinaria.repository.ClienteRepository;
+import com.veterinaria.repository.VeterinarioRepository;
 import com.veterinaria.util.JwtTokenService;
 
 @Configuration
@@ -32,7 +33,7 @@ public class SecurityConfig {
 
     @Bean
         public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenService jwtTokenService,
-            ClienteRepository clienteRepository) throws Exception {
+            ClienteRepository clienteRepository, VeterinarioRepository veterinarioRepository) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -40,6 +41,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+                        .requestMatchers("/api/veterinario-portal/**").hasRole("VETERINARIO")
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/catalogo/**").permitAll()
                         .requestMatchers("/api/clientes/**").permitAll()
@@ -49,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/citas").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/citas/*/disponibilidad").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/citas/*/reprogramar").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/citas/*/cancelar-veterinario").hasRole("VETERINARIO")
                         .requestMatchers("/api/citas/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**").permitAll()
                         .anyRequest().authenticated())
@@ -59,7 +62,7 @@ public class SecurityConfig {
                             response.getWriter().write(
                                     "{\"error\": \"No autenticado\", \"mensaje\": \"Se requiere iniciar sesión\"}");
                         }))
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService, clienteRepository),
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService, clienteRepository, veterinarioRepository),
                         UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
