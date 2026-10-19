@@ -1,7 +1,6 @@
 package com.veterinaria.service;
 
 import java.time.DayOfWeek;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -12,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.veterinaria.dto.CitaVeterinarioDTO;
 import com.veterinaria.dto.DisponibilidadVeterinarioDTO;
 import com.veterinaria.exception.ResourceNotFoundException;
+import com.veterinaria.model.FranjaHoraria;
 import com.veterinaria.model.HorarioAtencion;
 import com.veterinaria.model.Veterinario;
 import com.veterinaria.repository.CitaRepository;
@@ -25,6 +25,7 @@ public class VeterinarioPortalService {
 
     private final CitaRepository citaRepository;
     private final HorarioAtencionRepository horarioAtencionRepository;
+    private final ValidadorFranjasHorarias validador;
 
     @Transactional(readOnly = true)
     public List<CitaVeterinarioDTO> listarCitas(Long veterinarioId) {
@@ -64,19 +65,10 @@ public class VeterinarioPortalService {
                 continue;
             }
             DayOfWeek diaSemana = convertirDia(dia.dia());
-            List<DisponibilidadVeterinarioDTO.Franja> franjas = dia.franjas().stream()
-                    .sorted(Comparator.comparing(DisponibilidadVeterinarioDTO.Franja::horaInicio))
-                    .toList();
-            LocalTime finAnterior = null;
-            for (DisponibilidadVeterinarioDTO.Franja franja : franjas) {
-                if (franja.horaInicio() == null || franja.horaFin() == null
-                        || !franja.horaFin().isAfter(franja.horaInicio())) {
-                    throw new IllegalArgumentException("Cada franja debe tener una hora final posterior a la inicial");
-                }
-                if (finAnterior != null && franja.horaInicio().isBefore(finAnterior)) {
-                    throw new IllegalArgumentException("Las franjas de un mismo día no pueden traslaparse");
-                }
-                finAnterior = franja.horaFin();
+            validador.validarSinTraslapes(dia.franjas().stream()
+                    .map(franja -> new FranjaHoraria(franja.horaInicio(), franja.horaFin()))
+                    .toList());
+            for (DisponibilidadVeterinarioDTO.Franja franja : dia.franjas()) {
                 nuevosHorarios.add(HorarioAtencion.builder()
                         .veterinario(veterinario)
                         .diaSemana(diaSemana)
