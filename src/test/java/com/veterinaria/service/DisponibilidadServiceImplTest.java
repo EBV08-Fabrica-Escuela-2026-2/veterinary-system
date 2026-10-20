@@ -73,4 +73,30 @@ class DisponibilidadServiceImplTest {
         verify(citaRepository).findByVeterinarioIdAndEstadoAndFechaHoraInicioLessThanAndFechaHoraFinGreaterThan(
                 4L, "CONFIRMADA", fecha.plusDays(1).atStartOfDay(), fecha.atStartOfDay());
     }
+
+    @Test
+    void consultarDisponibilidad_paraHoyExcluyeFranjasAnterioresALaHoraActual() {
+        LocalDate fecha = LocalDate.of(2026, 10, 20);
+        Veterinario veterinario = Veterinario.builder().id(4L).nombre("Dra. Laura").build();
+        Servicio servicio = Servicio.builder().id(12L).nombre("Consulta").duracionMinutos(30)
+                .veterinario(veterinario).build();
+        HorarioAtencion horario = HorarioAtencion.builder().veterinario(veterinario)
+                .diaSemana(DayOfWeek.TUESDAY).horaInicio(java.time.LocalTime.of(9, 0))
+                .horaFin(java.time.LocalTime.of(12, 0)).activo(true).build();
+
+        when(servicioRepository.findById(12L)).thenReturn(Optional.of(servicio));
+        when(horarioAtencionRepository.findByVeterinarioIdAndDiaSemanaAndActivoTrue(4L, DayOfWeek.TUESDAY))
+                .thenReturn(List.of(horario));
+        when(citaRepository.findByVeterinarioIdAndEstadoAndFechaHoraInicioLessThanAndFechaHoraFinGreaterThan(
+                4L, "CONFIRMADA", fecha.plusDays(1).atStartOfDay(), fecha.atStartOfDay()))
+                .thenReturn(List.of());
+        when(clock.instant()).thenReturn(Instant.parse("2026-10-20T10:40:00Z"));
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+
+        DisponibilidadDiaDTO resultado = disponibilidadService.consultarDisponibilidad(12L, 4L, fecha);
+
+        assertEquals(2, resultado.getHorariosDisponibles().size());
+        assertEquals(java.time.LocalTime.of(11, 0), resultado.getHorariosDisponibles().get(0).getHoraInicio());
+        assertEquals(java.time.LocalTime.of(11, 30), resultado.getHorariosDisponibles().get(1).getHoraInicio());
+    }
 }
