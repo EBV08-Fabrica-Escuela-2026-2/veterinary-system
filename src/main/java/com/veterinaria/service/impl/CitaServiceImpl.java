@@ -91,7 +91,7 @@ public class CitaServiceImpl implements CitaService {
         }
 
         LocalDateTime fechaHoraInicio = dto.getFechaHoraInicio();
-        if (!fechaHoraInicio.isAfter(LocalDateTime.now())) {
+        if (!fechaHoraInicio.isAfter(LocalDateTime.now(clock))) {
             throw new IllegalArgumentException("La fecha y hora de la cita deben ser futuras");
         }
         LocalDateTime fechaHoraFin = fechaHoraInicio.plusMinutes(servicio.getDuracionMinutos());

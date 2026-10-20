@@ -1,6 +1,7 @@
 package com.veterinaria.service;
 
 import com.veterinaria.dto.CancelacionCitaDTO;
+import com.veterinaria.dto.CitaRegistroDTO;
 import com.veterinaria.dto.DisponibilidadDiaDTO;
 import com.veterinaria.dto.FranjaHorariaDTO;
 import com.veterinaria.dto.ReprogramacionCitaResponseDTO;
@@ -124,6 +125,35 @@ class CitaServiceImplTest {
 
         assertSame(disponibilidadEsperada, resultado);
         verify(disponibilidadService).consultarDisponibilidad(12L, 4L, fechaConsulta, 7L);
+    }
+
+    @Test
+    void reservarCita_rechazaUnaFranjaAnteriorAlRelojConfigurado() {
+        configurarReloj();
+        Cliente cliente = Cliente.builder().id(2L).build();
+        Mascota mascota = Mascota.builder().id(6L).cliente(cliente).build();
+        Veterinario veterinario = Veterinario.builder().id(4L).build();
+        Servicio servicio = Servicio.builder()
+                .id(12L)
+                .veterinario(veterinario)
+                .duracionMinutos(30)
+                .build();
+        CitaRegistroDTO solicitud = new CitaRegistroDTO();
+        solicitud.setMascotaId(mascota.getId());
+        solicitud.setVeterinarioId(veterinario.getId());
+        solicitud.setServicioId(servicio.getId());
+        solicitud.setFechaHoraInicio(AHORA.minusMinutes(1));
+
+        when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
+        when(mascotaRepository.findById(6L)).thenReturn(Optional.of(mascota));
+        when(veterinarioRepository.findById(4L)).thenReturn(Optional.of(veterinario));
+        when(servicioRepository.findById(12L)).thenReturn(Optional.of(servicio));
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> citaService.reservarCita(solicitud, 2L));
+
+        assertEquals("La fecha y hora de la cita deben ser futuras", exception.getMessage());
+        verify(citaRepository, never()).save(any());
     }
 
     @Test
