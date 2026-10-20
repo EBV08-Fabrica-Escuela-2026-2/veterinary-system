@@ -157,6 +157,38 @@ class CitaServiceImplTest {
     }
 
     @Test
+    void reservarCita_rechazaUnaHoraQueNoEstaEnLaDisponibilidadPublicada() {
+        configurarReloj();
+        Cliente cliente = Cliente.builder().id(2L).build();
+        Mascota mascota = Mascota.builder().id(6L).cliente(cliente).build();
+        Veterinario veterinario = Veterinario.builder().id(4L).build();
+        Servicio servicio = Servicio.builder()
+                .id(12L)
+                .veterinario(veterinario)
+                .duracionMinutos(30)
+                .build();
+        LocalDateTime inicio = AHORA.plusDays(1).withHour(9).withMinute(0);
+        CitaRegistroDTO solicitud = new CitaRegistroDTO();
+        solicitud.setMascotaId(mascota.getId());
+        solicitud.setVeterinarioId(veterinario.getId());
+        solicitud.setServicioId(servicio.getId());
+        solicitud.setFechaHoraInicio(inicio);
+
+        when(clienteRepository.findById(2L)).thenReturn(Optional.of(cliente));
+        when(mascotaRepository.findById(6L)).thenReturn(Optional.of(mascota));
+        when(veterinarioRepository.findById(4L)).thenReturn(Optional.of(veterinario));
+        when(servicioRepository.findById(12L)).thenReturn(Optional.of(servicio));
+        when(disponibilidadService.consultarDisponibilidad(12L, 4L, inicio.toLocalDate(), null))
+                .thenReturn(disponibilidadCon(LocalTime.of(10, 0)));
+
+        CitaNoDisponibleException exception = assertThrows(CitaNoDisponibleException.class,
+                () -> citaService.reservarCita(solicitud, 2L));
+
+        assertEquals("El horario seleccionado no está disponible para ese profesional", exception.getMessage());
+        verify(citaRepository, never()).save(any());
+    }
+
+    @Test
     void reprogramarCita_noRevelaCitasDeOtroCliente() {
         when(citaRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(crearCita(AHORA.plusHours(5))));
 

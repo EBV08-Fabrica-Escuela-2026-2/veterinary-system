@@ -94,6 +94,13 @@ public class CitaServiceImpl implements CitaService {
         if (!fechaHoraInicio.isAfter(LocalDateTime.now(clock))) {
             throw new IllegalArgumentException("La fecha y hora de la cita deben ser futuras");
         }
+        DisponibilidadDiaDTO disponibilidad = disponibilidadService.consultarDisponibilidad(
+                servicio.getId(), veterinario.getId(), fechaHoraInicio.toLocalDate(), null);
+        boolean franjaDisponible = disponibilidad.getHorariosDisponibles().stream()
+                .anyMatch(franja -> franja.getHoraInicio().equals(fechaHoraInicio.toLocalTime()));
+        if (!franjaDisponible) {
+            throw new CitaNoDisponibleException("El horario seleccionado no está disponible para ese profesional");
+        }
         LocalDateTime fechaHoraFin = fechaHoraInicio.plusMinutes(servicio.getDuracionMinutos());
 
         Cita cita = Cita.builder()
