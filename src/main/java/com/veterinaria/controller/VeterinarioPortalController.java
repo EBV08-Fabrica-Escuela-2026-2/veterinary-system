@@ -19,10 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.veterinaria.dto.CancelacionCitaDTO;
 import com.veterinaria.dto.CancelacionVeterinarioDTO;
+import com.veterinaria.dto.ActualizarEstadoCitaRequestDTO;
 import com.veterinaria.dto.CitaVeterinarioDTO;
 import com.veterinaria.dto.DisponibilidadVeterinarioDTO;
 import com.veterinaria.dto.FranjaDisponibilidadDTO;
 import com.veterinaria.dto.FranjaDisponibilidadRequestDTO;
+import com.veterinaria.dto.EstadoCitaResponseDTO;
 import com.veterinaria.dto.VeterinarioPortalPerfilDTO;
 import com.veterinaria.model.Veterinario;
 import com.veterinaria.repository.VeterinarioRepository;
@@ -70,6 +72,17 @@ public class VeterinarioPortalController {
         Veterinario veterinario = obtenerVeterinario(authentication);
         return ResponseEntity.ok(citaService.cancelarCitaPorVeterinario(
                 idCita, veterinario.getId(), solicitud.getMotivo()));
+    }
+
+    @PatchMapping("/citas/{idCita}/estado")
+    @Operation(summary = "Registrar resultado de una cita pasada", description = "Permite al veterinario marcar una cita propia cuyo horario ya terminó como COMPLETADA o NO_ASISTIO")
+    public ResponseEntity<EstadoCitaResponseDTO> actualizarEstadoCita(
+            @PathVariable Long idCita,
+            @Valid @RequestBody ActualizarEstadoCitaRequestDTO solicitud,
+            Authentication authentication) {
+        Veterinario veterinario = obtenerVeterinario(authentication);
+        return ResponseEntity.ok(citaService.cerrarCitaPorVeterinario(
+                idCita, veterinario.getId(), solicitud.estado()));
     }
 
     @GetMapping("/disponibilidad")

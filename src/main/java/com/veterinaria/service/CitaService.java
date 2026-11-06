@@ -5,6 +5,7 @@ import com.veterinaria.dto.CitaClienteDTO;
 import com.veterinaria.dto.CitaDetalleDTO;
 import com.veterinaria.dto.CitaRegistroDTO;
 import com.veterinaria.dto.DisponibilidadDiaDTO;
+import com.veterinaria.dto.EstadoCitaResponseDTO;
 import com.veterinaria.dto.ReprogramacionCitaResponseDTO;
 import com.veterinaria.dto.ReprogramarCitaRequestDTO;
 import com.veterinaria.model.Cita;
@@ -26,4 +27,6 @@ public interface CitaService {
     ReprogramacionCitaResponseDTO reprogramarCita(Long citaId, Long clienteId, ReprogramarCitaRequestDTO solicitud);
 
     CancelacionCitaDTO cancelarCitaPorVeterinario(Long citaId, Long veterinarioId, String motivo);
+
+    EstadoCitaResponseDTO cerrarCitaPorVeterinario(Long citaId, Long veterinarioId, String estado);
 }

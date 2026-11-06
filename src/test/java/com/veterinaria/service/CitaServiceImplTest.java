@@ -3,6 +3,7 @@ package com.veterinaria.service;
 import com.veterinaria.dto.CancelacionCitaDTO;
 import com.veterinaria.dto.CitaRegistroDTO;
 import com.veterinaria.dto.DisponibilidadDiaDTO;
+import com.veterinaria.dto.EstadoCitaResponseDTO;
 import com.veterinaria.dto.FranjaHorariaDTO;
 import com.veterinaria.dto.ReprogramacionCitaResponseDTO;
 import com.veterinaria.dto.ReprogramarCitaRequestDTO;
@@ -249,6 +250,58 @@ class CitaServiceImplTest {
 
         assertThrows(CancelacionNoPermitidaException.class,
                 () -> citaService.cancelarCitaPorVeterinario(7L, 4L, "Emergencia"));
+
+        verify(citaRepository, never()).save(any());
+    }
+
+    @Test
+    void cerrarCitaPorVeterinario_marcaUnaCitaPasadaComoCompletada() {
+        configurarReloj();
+        Cita cita = crearCita(AHORA.minusHours(1));
+        when(citaRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(cita));
+
+        EstadoCitaResponseDTO resultado = citaService.cerrarCitaPorVeterinario(
+                7L, 4L, CitaServiceImpl.ESTADO_COMPLETADA);
+
+        assertEquals(CitaServiceImpl.ESTADO_COMPLETADA, cita.getEstado());
+        assertEquals("Completada", resultado.etiquetaEstado());
+        verify(citaRepository).save(cita);
+    }
+
+    @Test
+    void cerrarCitaPorVeterinario_marcaUnaCitaPasadaComoNoAsistio() {
+        configurarReloj();
+        Cita cita = crearCita(AHORA.minusHours(1));
+        when(citaRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(cita));
+
+        EstadoCitaResponseDTO resultado = citaService.cerrarCitaPorVeterinario(
+                7L, 4L, CitaServiceImpl.ESTADO_NO_ASISTIO);
+
+        assertEquals(CitaServiceImpl.ESTADO_NO_ASISTIO, cita.getEstado());
+        assertEquals("No asistió", resultado.etiquetaEstado());
+        verify(citaRepository).save(cita);
+    }
+
+    @Test
+    void cerrarCitaPorVeterinario_rechazaUnaCitaQueTodaviaNoTermina() {
+        configurarReloj();
+        Cita cita = crearCita(AHORA.plusMinutes(10));
+        when(citaRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(cita));
+
+        CancelacionNoPermitidaException exception = assertThrows(CancelacionNoPermitidaException.class,
+                () -> citaService.cerrarCitaPorVeterinario(7L, 4L, CitaServiceImpl.ESTADO_COMPLETADA));
+
+        assertEquals("Solo puedes registrar el resultado cuando haya terminado el horario de la cita",
+                exception.getMessage());
+        verify(citaRepository, never()).save(any());
+    }
+
+    @Test
+    void cerrarCitaPorVeterinario_noPermiteCerrarCitasDeOtroProfesional() {
+        when(citaRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(crearCita(AHORA.minusHours(1))));
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> citaService.cerrarCitaPorVeterinario(7L, 99L, CitaServiceImpl.ESTADO_COMPLETADA));
 
         verify(citaRepository, never()).save(any());
     }

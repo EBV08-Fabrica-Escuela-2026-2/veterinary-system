@@ -5,6 +5,7 @@ import com.veterinaria.dto.CitaClienteDTO;
 import com.veterinaria.dto.CitaDetalleDTO;
 import com.veterinaria.dto.CitaRegistroDTO;
 import com.veterinaria.dto.DisponibilidadDiaDTO;
+import com.veterinaria.dto.EstadoCitaResponseDTO;
 import com.veterinaria.dto.ReprogramacionCitaResponseDTO;
 import com.veterinaria.dto.ReprogramarCitaRequestDTO;
 import com.veterinaria.exception.CancelacionNoPermitidaException;
@@ -39,6 +40,8 @@ public class CitaServiceImpl implements CitaService {
     public static final String ESTADO_CONFIRMADA = "CONFIRMADA";
     public static final String ESTADO_ANULADA = "ANULADA";
     public static final String ESTADO_CANCELADA_PROFESIONAL = "CANCELADA_PROFESIONAL";
+    public static final String ESTADO_COMPLETADA = "COMPLETADA";
+    public static final String ESTADO_NO_ASISTIO = "NO_ASISTIO";
     private static final long HORAS_MINIMAS_CANCELACION = 2;
     private static final String SIN_INDICACIONES = "No hay indicaciones especiales";
     private static final long HORAS_MINIMAS_REPROGRAMACION = 4;
@@ -282,6 +285,12 @@ public class CitaServiceImpl implements CitaService {
         if (ESTADO_CANCELADA_PROFESIONAL.equals(estado)) {
             return "Cancelada";
         }
+        if (ESTADO_COMPLETADA.equals(estado)) {
+            return "Completada";
+        }
+        if (ESTADO_NO_ASISTIO.equals(estado)) {
+            return "No asistió";
+        }
         return estado;
     }
 
@@ -378,5 +387,38 @@ public class CitaServiceImpl implements CitaService {
         dto.setFechaHoraInicio(cita.getFechaHoraInicio());
         dto.setFechaHoraFin(cita.getFechaHoraFin());
         return dto;
+    }
+
+    @Override
+    @Transactional
+    public EstadoCitaResponseDTO cerrarCitaPorVeterinario(Long citaId, Long veterinarioId, String estado) {
+        if (!ESTADO_COMPLETADA.equals(estado) && !ESTADO_NO_ASISTIO.equals(estado)) {
+            throw new IllegalArgumentException("El estado debe ser COMPLETADA o NO_ASISTIO");
+        }
+
+        Cita cita = citaRepository.findByIdForUpdate(citaId)
+                .filter(item -> item.getVeterinario().getId().equals(veterinarioId))
+                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + citaId));
+
+        if (!ESTADO_CONFIRMADA.equals(cita.getEstado())) {
+            throw new CancelacionNoPermitidaException(
+                    "La cita ya tiene un resultado definitivo y no puede modificarse");
+        }
+        if (cita.getFechaHoraFin().isAfter(LocalDateTime.now(clock))) {
+            throw new CancelacionNoPermitidaException(
+                    "Solo puedes registrar el resultado cuando haya terminado el horario de la cita");
+        }
+
+        cita.setEstado(estado);
+        citaRepository.save(cita);
+
+        String etiqueta = etiquetaEstado(estado);
+        return new EstadoCitaResponseDTO(
+                cita.getId(),
+                estado,
+                etiqueta,
+                "La cita quedó registrada como " + etiqueta.toLowerCase() + " en el historial del cliente y la mascota.",
+                cita.getFechaHoraInicio(),
+                cita.getFechaHoraFin());
     }
 }
