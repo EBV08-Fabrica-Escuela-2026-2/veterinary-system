@@ -1,5 +1,6 @@
 package com.veterinaria.service.impl;
 
+import com.veterinaria.util.EstadoCitaTexto;
 import com.veterinaria.dto.CancelacionCitaDTO;
 import com.veterinaria.dto.CitaClienteDTO;
 import com.veterinaria.dto.CitaDetalleDTO;
@@ -172,6 +173,7 @@ public class CitaServiceImpl implements CitaService {
         dto.setIdCita(cita.getId());
         dto.setEstado(cita.getEstado());
         dto.setEtiquetaEstado(etiquetaEstado(cita.getEstado()));
+        dto.setEstadoTexto(EstadoCitaTexto.de(cita.getEstado()));
         dto.setCupoLiberado(cupoLiberado(cita.getEstado()));
         dto.setFechaHoraInicio(cita.getFechaHoraInicio());
         dto.setFechaHoraFin(cita.getFechaHoraFin());
@@ -268,6 +270,7 @@ public class CitaServiceImpl implements CitaService {
         dto.setFechaHoraFin(cita.getFechaHoraFin());
         dto.setEstado(cita.getEstado());
         dto.setEtiquetaEstado(etiquetaEstado(cita.getEstado()));
+        dto.setEstadoTexto(EstadoCitaTexto.de(cita.getEstado()));
         dto.setCupoLiberado(cupoLiberado(cita.getEstado()));
         dto.setMotivoCancelacion(cita.getMotivoCancelacion());
         dto.setCanceladaAt(cita.getCanceladaAt());
@@ -323,6 +326,7 @@ public class CitaServiceImpl implements CitaService {
                 .id(cita.getId())
                 .codigo("VA-" + String.format("%04d", cita.getId()))
                 .estado(cita.getEstado())
+                .estadoTexto(EstadoCitaTexto.de(cita.getEstado()))
                 .fechaHoraInicio(cita.getFechaHoraInicio())
                 .fechaHoraFin(cita.getFechaHoraFin())
                 .puedeCancelarse(sePuedeCancelar(cita))
@@ -383,6 +387,7 @@ public class CitaServiceImpl implements CitaService {
         dto.setIdCita(cita.getId());
         dto.setEstado(cita.getEstado());
         dto.setEtiquetaEstado(etiquetaEstado(cita.getEstado()));
+        dto.setEstadoTexto(EstadoCitaTexto.de(cita.getEstado()));
         dto.setCupoLiberado(cupoLiberado(cita.getEstado()));
         dto.setFechaHoraInicio(cita.getFechaHoraInicio());
         dto.setFechaHoraFin(cita.getFechaHoraFin());
@@ -417,6 +422,7 @@ public class CitaServiceImpl implements CitaService {
                 cita.getId(),
                 estado,
                 etiqueta,
+                EstadoCitaTexto.de(estado),
                 "La cita quedó registrada como " + etiqueta.toLowerCase() + " en el historial del cliente y la mascota.",
                 cita.getFechaHoraInicio(),
                 cita.getFechaHoraFin());

@@ -12,5 +12,6 @@ public record CitaVeterinarioDTO(
         LocalDateTime fechaHoraInicio,
         LocalDateTime fechaHoraFin,
         String estado,
+        String estadoTexto,
         String motivoCancelacion) {
 }

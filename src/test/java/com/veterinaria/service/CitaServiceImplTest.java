@@ -265,6 +265,7 @@ class CitaServiceImplTest {
 
         assertEquals(CitaServiceImpl.ESTADO_COMPLETADA, cita.getEstado());
         assertEquals("Completada", resultado.etiquetaEstado());
+        assertEquals("Completada", resultado.estadoTexto());
         verify(citaRepository).save(cita);
     }
 
@@ -279,6 +280,7 @@ class CitaServiceImplTest {
 
         assertEquals(CitaServiceImpl.ESTADO_NO_ASISTIO, cita.getEstado());
         assertEquals("No asistió", resultado.etiquetaEstado());
+        assertEquals("No asistió", resultado.estadoTexto());
         verify(citaRepository).save(cita);
     }
 
