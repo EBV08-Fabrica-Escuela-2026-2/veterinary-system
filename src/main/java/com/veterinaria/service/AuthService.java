@@ -19,4 +19,10 @@ public interface AuthService {
     AuthResponseDTO iniciarSesionVeterinarioDemo(String correoDemo);
 
     ClienteResponseDTO obtenerPerfil(String correo);
+
+    /**
+     * Cierra la sesión del usuario: incrementa su versión de token, con lo que el JWT
+     * actual (y cualquier otro emitido antes) deja de ser aceptado por el filtro.
+     */
+    void cerrarSesion(String correo);
 }

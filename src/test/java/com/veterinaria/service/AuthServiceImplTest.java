@@ -222,4 +222,23 @@ class AuthServiceImplTest {
         dto.setPassword("ClaveSegura123");
         return dto;
     }
+
+    @Test
+    void cerrarSesion_incrementaLaVersionDelTokenDelUsuario() {
+        Usuario usuario = Usuario.builder().id(1L).correo("alex@gmail.com").versionToken(3).build();
+        when(usuarioRepository.findByCorreoIgnoreCase("alex@gmail.com")).thenReturn(Optional.of(usuario));
+
+        authService.cerrarSesion("alex@gmail.com");
+
+        assertEquals(4, usuario.getVersionToken());
+        verify(usuarioRepository).save(usuario);
+    }
+
+    @Test
+    void cerrarSesion_conCorreoDesconocidoRechazaLaSolicitud() {
+        when(usuarioRepository.findByCorreoIgnoreCase("nadie@gmail.com")).thenReturn(Optional.empty());
+
+        assertThrows(ClienteNoAutenticadoException.class, () -> authService.cerrarSesion("nadie@gmail.com"));
+        verify(usuarioRepository, never()).save(any());
+    }
 }

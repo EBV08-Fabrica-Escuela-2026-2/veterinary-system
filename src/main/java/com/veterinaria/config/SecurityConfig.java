@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                         .requestMatchers("/api/veterinario-portal/**").hasRole("VETERINARIO")
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/catalogo/**").permitAll()
