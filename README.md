@@ -192,35 +192,67 @@ curl "http://localhost:8080/api/mascotas?documentoIdentidad=1020304050"
 
 ### Autenticación
 
-| Método | Ruta | Estado |
+| Método | Ruta | Descripción |
 |---|---|---|
-| `POST` | `/api/auth/register` | Registra credenciales para un cliente existente |
-| `POST` | `/api/auth/login` | Valida credenciales y entrega un JWT |
+| `POST` | `/api/auth/register` | Crea la cuenta (rol `CLIENTE`) de un cliente ya registrado |
+| `POST` | `/api/auth/login` | Valida correo y contraseña de un Cliente, Veterinario o Administrador y entrega un JWT |
+| `POST` | `/api/auth/veterinario/demo` | Token del veterinario demo (revisiones académicas) |
+| `GET` | `/api/auth/me` | Perfil del cliente autenticado |
 
-Para registrar una cuenta, el correo y el documento deben coincidir con un cliente ya registrado. La contraseña se guarda usando BCrypt.
+Todas las cuentas viven en la tabla `usuario` (migración `V17`), con uno o varios roles (`CLIENTE`, `VETERINARIO`, `ADMINISTRADOR`) en `usuario_rol`. Las contraseñas se guardan con BCrypt. Las cuentas de `cliente_credencial` se migraron a `usuario` conservando su contraseña.
+
+Para registrar una cuenta de cliente, el correo y el documento deben coincidir con un cliente ya registrado:
+
+```json
+{ "correo": "alex@gmail.com", "documentoIdentidad": "12345678", "password": "ClaveSegura123" }
+```
+
+Inicio de sesión (`POST /api/auth/login`):
+
+```json
+{ "correo": "alex@gmail.com", "password": "ClaveSegura123" }
+```
 
 ```json
 {
-  "correo": "alex@gmail.com",
-  "documentoIdentidad": "12345678",
-  "password": "ClaveSegura123"
+  "mensaje": "Inicio de sesión exitoso",
+  "token": "<jwt>",
+  "tipoToken": "Bearer",
+  "expiraEnMs": 86400000,
+  "rol": "CLIENTE",
+  "roles": ["CLIENTE"]
 }
 ```
 
-Envía ese cuerpo a `POST /api/auth/register`. Luego inicia sesión con:
+`rol` es el rol principal (prioridad `ADMINISTRADOR` > `VETERINARIO` > `CLIENTE`) para redirigir al panel correspondiente. El JWT lleva como `subject` el correo y los claims `uid`, `roles`, `rol`, `tv` (versión de token) y `exp`. En Swagger, pulsa **Authorize** y pega únicamente el valor de `token`.
 
-```json
-{
-  "correo": "alex@gmail.com",
-  "password": "ClaveSegura123"
-}
-```
+En cada petición el filtro JWT valida firma y expiración y vuelve a leer el usuario de la base de datos: si la cuenta está inactiva o su versión de token cambió, el token deja de ser válido y la API responde `401`.
 
-La respuesta de `POST /api/auth/login` contiene `token` y `tipoToken: "Bearer"`. En Swagger, pulsa **Authorize** y pega únicamente el valor de `token`; después podrás llamar los endpoints protegidos de reprogramación de citas. El filtro JWT valida la firma y expiración del token y solo autentica clientes activos.
+| Código | Cuándo |
+|---|---|
+| `401` | Correo no registrado, contraseña errónea o cuenta inactiva. Siempre con el mensaje genérico `Credenciales incorrectas` |
+| `429` | 5 intentos fallidos consecutivos para la misma cuenta o desde la misma IP. Se bloquean los intentos durante 15 minutos (incluso con la contraseña correcta). La respuesta trae el encabezado `Retry-After` y `segundosRestantes` |
 
-El secreto JWT debe configurarse mediante `APP_JWT_SECRET` en cualquier entorno compartido o de producción; el valor predeterminado de `application.yml` es solo para desarrollo.
+Configuración:
 
-Los endpoints de catálogo, clientes, veterinarios, servicios y mascotas siguen siendo públicos. Las rutas de reprogramación de citas requieren un JWT válido.
+| Variable | Valor por defecto | Uso |
+|---|---|---|
+| `APP_JWT_SECRET` | valor de desarrollo | Secreto de firma. Obligatorio en entornos compartidos o de producción |
+| `APP_JWT_EXPIRATION_MS` | `86400000` | Duración del token |
+| `APP_LOGIN_MAX_INTENTOS` | `5` | Intentos fallidos consecutivos antes del bloqueo |
+| `APP_LOGIN_BLOQUEO_MINUTOS` | `15` | Duración del bloqueo |
+
+El control de intentos se guarda en memoria (suficiente para una sola instancia). Detrás de Render la IP real se toma de `X-Forwarded-For` (`server.forward-headers-strategy: native`).
+
+Cuentas demo sembradas por las migraciones (contraseña `Demo2026!`; cámbiala en entornos compartidos):
+
+| Correo | Rol |
+|---|---|
+| `carolina.restrepo@vetagenda.com` | `CLIENTE` |
+| `camilo.duran@vetagenda.com` | `VETERINARIO` |
+| `admin@vetagenda.com` | `ADMINISTRADOR` |
+
+Los endpoints de catálogo, clientes, veterinarios, servicios y mascotas siguen siendo públicos. Las rutas de reserva y reprogramación de citas requieren un JWT válido.
 
 ### Portal del veterinario: disponibilidad
 

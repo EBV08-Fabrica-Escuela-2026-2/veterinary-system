@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -60,6 +61,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ClienteNoAutenticadoException.class)
     public ResponseEntity<ProblemDetail> handleClienteNoAutenticado(ClienteNoAutenticadoException ex) {
         return responder(HttpStatus.UNAUTHORIZED, TITULO_NO_AUTENTICADO, ex.getMessage(), null);
+    }
+
+    // ---------- 429 ----------
+
+    @ExceptionHandler(DemasiadosIntentosException.class)
+    public ResponseEntity<ProblemDetail> handleDemasiadosIntentos(DemasiadosIntentosException ex) {
+        ProblemDetail problema = ProblemDetailFactory.crear(HttpStatus.TOO_MANY_REQUESTS,
+                "Demasiados intentos", ex.getMessage());
+        problema.setProperty("segundosRestantes", ex.getSegundosRestantes());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getSegundosRestantes()))
+                .body(problema);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

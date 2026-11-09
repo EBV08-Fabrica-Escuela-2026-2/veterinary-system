@@ -9,7 +9,14 @@ public interface AuthService {
 
     AuthResponseDTO registrar(RegistroAuthDTO solicitud);
 
-    AuthResponseDTO iniciarSesion(LoginAuthDTO solicitud);
+    /**
+     * Valida las credenciales de cualquier usuario (Cliente, Veterinario o Administrador)
+     * y emite un JWT. Aplica el control de intentos fallidos por cuenta e IP.
+     */
+    AuthResponseDTO iniciarSesion(LoginAuthDTO solicitud, String ipCliente);
+
+    /** Emite un JWT para el perfil veterinario demo (revisiones académicas). */
+    AuthResponseDTO iniciarSesionVeterinarioDemo(String correoDemo);
 
     ClienteResponseDTO obtenerPerfil(String correo);
 }

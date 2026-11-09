@@ -25,6 +25,9 @@ spring:
 
 server:
   port: ${PORT:8080}
+  # Usa X-Forwarded-For de proxies internos (Render) para obtener la IP real del cliente
+  # en el control de intentos fallidos del inicio de sesión.
+  forward-headers-strategy: ${SERVER_FORWARD_HEADERS_STRATEGY:native}
 
 app:
   time-zone: ${APP_TIME_ZONE:America/Bogota}
@@ -33,6 +36,10 @@ app:
   jwt:
     secret: ${APP_JWT_SECRET:clave-secreta-solo-para-desarrollo-cambiar-en-produccion-2026}
     expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
+  seguridad:
+    login:
+      max-intentos: ${APP_LOGIN_MAX_INTENTOS:5}
+      bloqueo-minutos: ${APP_LOGIN_BLOQUEO_MINUTOS:15}
 
 springdoc:
   api-docs:
