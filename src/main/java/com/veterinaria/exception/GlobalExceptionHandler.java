@@ -41,6 +41,7 @@ public class GlobalExceptionHandler {
     private static final String TITULO_ACCESO_DENEGADO = "Acceso denegado";
     private static final String TITULO_CONFLICTO = "Conflicto con el estado actual";
     private static final String TITULO_DATOS_NO_VALIDOS = "Datos no válidos";
+    private static final String MENSAJE_ACCESO_DENEGADO = "No tienes permisos para realizar esta acción";
 
     // ---------- 404 ----------
 
@@ -63,8 +64,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException ex) {
-        return responder(HttpStatus.FORBIDDEN, TITULO_ACCESO_DENEGADO,
-                "No tienes permisos para realizar esta acción", null);
+        // Conserva los mensajes propios (ej. "El cliente no se encuentra activo");
+        // el genérico de Spring ("Access Denied") se reemplaza por uno en español.
+        String mensaje = ex.getMessage();
+        if (mensaje == null || mensaje.isBlank() || "Access Denied".equalsIgnoreCase(mensaje.trim())) {
+            mensaje = MENSAJE_ACCESO_DENEGADO;
+        }
+        return responder(HttpStatus.FORBIDDEN, TITULO_ACCESO_DENEGADO, mensaje, null);
     }
 
     // ---------- 409 ----------
