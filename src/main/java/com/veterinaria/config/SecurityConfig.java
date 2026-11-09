@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         .requestMatchers("/api/veterinario-portal/**").hasRole("VETERINARIO")
+                        .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/catalogo/**").permitAll()
                         .requestMatchers("/api/clientes/**").permitAll()
