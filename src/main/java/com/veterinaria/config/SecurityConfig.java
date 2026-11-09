@@ -59,17 +59,23 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType("application/json");
+                            response.setContentType("application/problem+json");
                             response.setCharacterEncoding("UTF-8");
                             response.getWriter().write(
-                                    "{\"error\": \"No autenticado\", \"mensaje\": \"Se requiere iniciar sesión\"}");
+                                    "{\"type\": \"about:blank\", \"title\": \"No autenticado\", \"status\": 401, "
+                                            + "\"detail\": \"Se requiere iniciar sesión\", "
+                                            + "\"error\": \"No autenticado\", "
+                                            + "\"mensaje\": \"Se requiere iniciar sesión\"}");
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.setContentType("application/json");
+                            response.setContentType("application/problem+json");
                             response.setCharacterEncoding("UTF-8");
                             response.getWriter().write(
-                                    "{\"error\": \"Acceso denegado\", \"mensaje\": \"No tienes permisos para esta acción\"}");
+                                    "{\"type\": \"about:blank\", \"title\": \"Acceso denegado\", \"status\": 403, "
+                                            + "\"detail\": \"No tienes permisos para realizar esta acción\", "
+                                            + "\"error\": \"Acceso denegado\", "
+                                            + "\"mensaje\": \"No tienes permisos para realizar esta acción\"}");
                         }))
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService, clienteRepository, veterinarioRepository),
                         UsernamePasswordAuthenticationFilter.class);
