@@ -2,35 +2,38 @@ package com.veterinaria.config;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.veterinaria.model.Cliente;
-import com.veterinaria.model.Veterinario;
-import com.veterinaria.repository.ClienteRepository;
-import com.veterinaria.repository.VeterinarioRepository;
+import com.veterinaria.model.Usuario;
+import com.veterinaria.repository.UsuarioRepository;
 import com.veterinaria.util.JwtTokenService;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+/**
+ * Autentica cada petición con el JWT del encabezado Authorization.
+ * Los roles y el estado se leen de la base de datos en cada petición, de modo que
+ * desactivar una cuenta o cambiar sus roles tiene efecto inmediato. Si la versión
+ * de token del JWT no coincide con la del usuario, el token se considera revocado.
+ */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenService jwtTokenService;
-    private final ClienteRepository clienteRepository;
-    private final VeterinarioRepository veterinarioRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    public JwtAuthenticationFilter(JwtTokenService jwtTokenService, ClienteRepository clienteRepository,
-            VeterinarioRepository veterinarioRepository) {
+    public JwtAuthenticationFilter(JwtTokenService jwtTokenService, UsuarioRepository usuarioRepository) {
         this.jwtTokenService = jwtTokenService;
-        this.clienteRepository = clienteRepository;
-        this.veterinarioRepository = veterinarioRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Override
@@ -40,19 +43,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authorization != null && authorization.startsWith("Bearer ")
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                String subject = jwtTokenService.validarYObtenerClaims(authorization.substring(7)).getSubject();
-                boolean clienteAutenticado = clienteRepository.findByCorreoIgnoreCase(subject)
-                        .filter(cliente -> Boolean.TRUE.equals(cliente.getActivo()))
-                        .map(cliente -> {
-                            autenticar(cliente);
-                            return true;
-                        })
-                        .orElse(false);
-                if (!clienteAutenticado) {
-                    veterinarioRepository.findByCorreoIgnoreCase(subject)
-                            .filter(veterinario -> Boolean.TRUE.equals(veterinario.getActivo()))
-                            .ifPresent(this::autenticar);
-                }
+                Claims claims = jwtTokenService.validarYObtenerClaims(authorization.substring(7));
+                int versionToken = leerVersionToken(claims);
+                usuarioRepository.findByCorreoIgnoreCase(claims.getSubject())
+                        .filter(Usuario::estaActivo)
+                        .filter(usuario -> Objects.equals(usuario.getVersionToken(), versionToken))
+                        .ifPresent(this::autenticar);
             } catch (JwtException | IllegalArgumentException ignored) {
                 SecurityContextHolder.clearContext();
             }
@@ -61,15 +57,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private void autenticar(Cliente cliente) {
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                cliente.getCorreo(), null, List.of(new SimpleGrantedAuthority("ROLE_CLIENTE")));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+    private int leerVersionToken(Claims claims) {
+        Object valor = claims.get(JwtTokenService.CLAIM_VERSION_TOKEN);
+        return valor instanceof Number numero ? numero.intValue() : 0;
     }
 
-    private void autenticar(Veterinario veterinario) {
+    private void autenticar(Usuario usuario) {
+        List<SimpleGrantedAuthority> permisos = usuario.getRoles().stream()
+                .map(rol -> new SimpleGrantedAuthority("ROLE_" + rol.name()))
+                .toList();
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                veterinario.getCorreo(), null, List.of(new SimpleGrantedAuthority("ROLE_VETERINARIO")));
+                usuario.getCorreo(), null, permisos);
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 }
