@@ -157,4 +157,13 @@ public class AuthServiceImpl implements AuthService {
     private ClienteNoAutenticadoException credencialesInvalidas() {
         return new ClienteNoAutenticadoException(CREDENCIALES_INCORRECTAS);
     }
+
+    @Override
+    @Transactional
+    public void cerrarSesion(String correo) {
+        Usuario usuario = usuarioRepository.findByCorreoIgnoreCase(correo)
+                .orElseThrow(this::credencialesInvalidas);
+        usuario.setVersionToken(usuario.getVersionToken() + 1);
+        usuarioRepository.save(usuario);
+    }
 }
