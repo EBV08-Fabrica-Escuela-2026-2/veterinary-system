@@ -222,7 +222,7 @@ class VeterinarioPortalIntegrationTest {
         HttpResponse<String> prohibido = enviarJson("POST", RUTA_FRANJAS, cuerpo, tokenCliente);
         assertThat(prohibido.statusCode()).isEqualTo(403);
         assertThat(prohibido.headers().firstValue("Content-Type").orElse("")).containsIgnoringCase("charset=UTF-8");
-        assertThat(prohibido.body()).contains("No tienes permisos para esta acción");
+        assertThat(prohibido.body()).contains("No tienes permisos para realizar esta acción");
         assertThat(enviarJson("PUT", RUTA_FRANJAS + "/1", cuerpo, tokenCliente).statusCode()).isEqualTo(403);
     }
 
