@@ -103,6 +103,11 @@ public class GlobalExceptionHandler {
         return responder(HttpStatus.CONFLICT, TITULO_CONFLICTO, ex.getMessage(), null);
     }
 
+    @ExceptionHandler(IntegridadAdministrativaException.class)
+    public ResponseEntity<ProblemDetail> handleIntegridadAdministrativa(IntegridadAdministrativaException ex) {
+        return responder(HttpStatus.CONFLICT, TITULO_CONFLICTO, ex.getMessage(), null);
+    }
+
     // ---------- 400 ----------
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
