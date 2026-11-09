@@ -44,6 +44,17 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void accesoDenegadoConservaElMensajePropioDeLaRegla() {
+        ResponseEntity<ProblemDetail> respuesta = handler
+                .handleAccessDenied(new AccessDeniedException("El cliente no se encuentra activo"));
+
+        assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(respuesta.getBody().getDetail()).isEqualTo("El cliente no se encuentra activo");
+        assertThat(respuesta.getBody().getProperties())
+                .containsEntry("mensaje", "El cliente no se encuentra activo");
+    }
+
+    @Test
     void errorGeneralNoFiltraDetallesTecnicos() {
         ResponseEntity<ProblemDetail> respuesta = handler.handleGeneral(new RuntimeException("NullPointer interno"));
 
