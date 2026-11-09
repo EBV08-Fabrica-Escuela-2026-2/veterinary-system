@@ -254,6 +254,25 @@ Cuentas demo sembradas por las migraciones (contraseña `Demo2026!`; cámbiala e
 
 Los endpoints de catálogo, clientes, veterinarios, servicios y mascotas siguen siendo públicos. Las rutas de reserva y reprogramación de citas requieren un JWT válido.
 
+### Administración de usuarios
+
+Requieren el JWT de un administrador activo (`ROLE_ADMINISTRADOR`): sin token responden `401` y con otro rol `403`.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/api/admin/usuarios?buscar=&rol=&activo=` | Lista los usuarios (filtros opcionales por nombre o correo, rol y estado) |
+| `PATCH` | `/api/admin/usuarios/{id}/estado` | Activa o inactiva una cuenta. Cuerpo: `{ "activo": false }` |
+| `PATCH` | `/api/admin/usuarios/{id}/roles` | Reemplaza los roles. Cuerpo: `{ "roles": ["VETERINARIO", "ADMINISTRADOR"] }` |
+| `GET` | `/api/admin/usuarios/{id}/auditoria` | Historial de cambios: acción, valor anterior y nuevo, administrador y fecha |
+
+Reglas:
+
+- Al inactivar una cuenta se incrementa su versión de token: sus sesiones abiertas quedan desconectadas en la siguiente petición (`401`), y siguen invalidadas aunque luego se reactive.
+- Los cambios de roles aplican de inmediato, porque el filtro JWT lee los roles de la base en cada petición.
+- Cada cambio de estado o de roles queda registrado en `usuario_auditoria` (migración `V18`) con el administrador que lo hizo, la fecha y la hora.
+- `409`: un administrador no puede desactivarse a sí mismo ni retirarse su propio rol de administrador, y ningún cambio puede dejar la clínica sin al menos un administrador activo. Las filas de los administradores activos se bloquean durante el cambio, así que dos administradores no pueden desactivarse mutuamente al mismo tiempo.
+- `400`: sin roles, rol inexistente, o rol `VETERINARIO`/`CLIENTE` para una cuenta sin veterinario/cliente vinculado.
+
 ### Portal del veterinario: disponibilidad
 
 Requieren el JWT de un veterinario activo (`ROLE_VETERINARIO`): sin token responden `401` y con el token de un cliente `403`. El veterinario siempre se toma del token, nunca del cuerpo. Los días viajan en español (`LUNES`, `MARTES`, `MIERCOLES`, `JUEVES`, `VIERNES`, `SABADO`, `DOMINGO`) y las horas como `HH:mm`.
