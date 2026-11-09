@@ -12,6 +12,7 @@ public class CitaClienteDTO {
     private LocalDateTime fechaHoraFin;
     private String estado;
     private String etiquetaEstado;
+    private String estadoTexto;
     private boolean cupoLiberado;
     private String motivoCancelacion;
     private LocalDateTime canceladaAt;
@@ -74,6 +75,14 @@ public class CitaClienteDTO {
 
     public void setEstado(String estado) {
         this.estado = estado;
+    }
+
+    public String getEstadoTexto() {
+        return estadoTexto;
+    }
+
+    public void setEstadoTexto(String estadoTexto) {
+        this.estadoTexto = estadoTexto;
     }
 
     public String getEtiquetaEstado() {

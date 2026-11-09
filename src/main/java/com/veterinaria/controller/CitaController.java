@@ -1,5 +1,7 @@
 package com.veterinaria.controller;
 
+import com.veterinaria.util.EstadoCitaTexto;
+
 import com.veterinaria.dto.CancelacionCitaDTO;
 import com.veterinaria.dto.CitaClienteDTO;
 import com.veterinaria.dto.CitaDetalleDTO;
@@ -73,7 +75,8 @@ public class CitaController {
                 "idCita", cita.getId(),
                 "fechaHoraInicio", cita.getFechaHoraInicio(),
                 "fechaHoraFin", cita.getFechaHoraFin(),
-                "estado", cita.getEstado()));
+                "estado", cita.getEstado(),
+                "estadoTexto", EstadoCitaTexto.de(cita.getEstado())));
     }
 
     @GetMapping

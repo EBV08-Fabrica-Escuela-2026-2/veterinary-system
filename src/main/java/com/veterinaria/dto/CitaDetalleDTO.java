@@ -16,6 +16,7 @@ public class CitaDetalleDTO {
      private Long id;
     private String codigo;
     private String estado;
+    private String estadoTexto;
     private LocalDateTime fechaHoraInicio;
     private LocalDateTime fechaHoraFin;
     private boolean puedeCancelarse;

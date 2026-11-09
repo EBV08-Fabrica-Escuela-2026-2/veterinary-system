@@ -1,5 +1,6 @@
 package com.veterinaria.service;
 
+import com.veterinaria.util.EstadoCitaTexto;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -54,6 +55,7 @@ public class VeterinarioPortalService {
                         cita.getFechaHoraInicio(),
                         cita.getFechaHoraFin(),
                         cita.getEstado(),
+                        EstadoCitaTexto.de(cita.getEstado()),
                         cita.getMotivoCancelacion()))
                 .toList();
     }
