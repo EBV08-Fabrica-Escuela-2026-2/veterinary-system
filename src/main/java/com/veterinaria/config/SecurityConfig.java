@@ -20,8 +20,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
-import com.veterinaria.repository.ClienteRepository;
-import com.veterinaria.repository.VeterinarioRepository;
+import com.veterinaria.repository.UsuarioRepository;
 import com.veterinaria.util.JwtTokenService;
 
 @Configuration
@@ -32,8 +31,8 @@ public class SecurityConfig {
     private String allowedOrigins;
 
     @Bean
-        public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenService jwtTokenService,
-            ClienteRepository clienteRepository, VeterinarioRepository veterinarioRepository) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenService jwtTokenService,
+            UsuarioRepository usuarioRepository) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -77,7 +76,7 @@ public class SecurityConfig {
                                             + "\"error\": \"Acceso denegado\", "
                                             + "\"mensaje\": \"No tienes permisos para realizar esta acción\"}");
                         }))
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService, clienteRepository, veterinarioRepository),
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService, usuarioRepository),
                         UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
