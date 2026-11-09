@@ -47,6 +47,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/clientes/**").permitAll()
                         .requestMatchers("/api/veterinarios/**").permitAll()
                         .requestMatchers("/api/servicios/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/mascotas/*/historial").authenticated()
                         .requestMatchers("/api/mascotas/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/citas").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/citas/*/disponibilidad").authenticated()

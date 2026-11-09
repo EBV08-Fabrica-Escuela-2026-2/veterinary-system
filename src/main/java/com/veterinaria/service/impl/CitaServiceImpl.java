@@ -275,7 +275,7 @@ public class CitaServiceImpl implements CitaService {
         return dto;
     }
 
-    private String etiquetaEstado(String estado) {
+    public static String etiquetaEstado(String estado) {
         if (ESTADO_CONFIRMADA.equals(estado)) {
             return "Activa";
         }
