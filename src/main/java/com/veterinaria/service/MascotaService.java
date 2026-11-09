@@ -1,5 +1,6 @@
 package com.veterinaria.service;
 
+import com.veterinaria.dto.HistorialMascotaDTO;
 import com.veterinaria.dto.MascotaRegistroDTO;
 import com.veterinaria.model.Mascota;
 
@@ -10,4 +11,6 @@ public interface MascotaService {
     Mascota registrarMascota(MascotaRegistroDTO dto, Long clienteId);
 
     List<Mascota> listarMascotasPorCliente(Long clienteId);
+
+    HistorialMascotaDTO consultarHistorial(Long mascotaId, String correoAutenticado, int page, int limit);
 }

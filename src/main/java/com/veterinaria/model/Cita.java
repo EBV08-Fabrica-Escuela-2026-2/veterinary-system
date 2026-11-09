@@ -63,6 +63,15 @@ public class Cita {
     @Column(name = "cancelada_at")
     private LocalDateTime canceladaAt;
 
+    @Column(length = 1000)
+    private String diagnostico;
+
+    @Column(length = 1000)
+    private String tratamiento;
+
+    @Column(name = "notas_clinicas", length = 1000)
+    private String notasClinicas;
+
     @Column(nullable = false, length = 30)
     @Builder.Default
     private String estado = "CONFIRMADA";
