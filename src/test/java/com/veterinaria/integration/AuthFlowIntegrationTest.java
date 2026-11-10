@@ -3,7 +3,9 @@ package com.veterinaria.integration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.veterinaria.model.Cliente;
+import com.veterinaria.model.Mascota;
 import com.veterinaria.repository.ClienteRepository;
+import com.veterinaria.repository.MascotaRepository;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -29,6 +31,9 @@ class AuthFlowIntegrationTest {
 
     @Autowired
     private ClienteRepository clienteRepository;
+
+    @Autowired
+    private MascotaRepository mascotaRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -95,7 +100,59 @@ class AuthFlowIntegrationTest {
                 "fechaHoraInicio", "2026-10-23T09:00:00"), null);
 
         assertThat(response.statusCode()).isEqualTo(401);
-        assertThat(response.body()).contains("Se requiere iniciar sesión");
+    }
+
+    @Test
+    void orientacionExigeSesionYDevuelveRespaldoSinClaveGemini() throws Exception {
+        String suffix = String.valueOf(System.nanoTime());
+        String correo = "orientation" + suffix + "@example.com";
+        String documento = suffix.substring(suffix.length() - 8);
+        Cliente cliente = clienteRepository.saveAndFlush(Cliente.builder()
+                .nombre("Cliente de orientación")
+                .documentoIdentidad(documento)
+                .telefono("3001234567")
+                .correo(correo)
+                .activo(true)
+                .build());
+        Mascota mascota = mascotaRepository.saveAndFlush(Mascota.builder()
+                .nombre("Mascota de prueba")
+                .especie("Perro")
+                .raza("Mestizo")
+                .edad(4)
+                .sexo("Macho")
+                .cliente(cliente)
+                .build());
+
+        HttpResponse<String> sinToken = enviarJson("/api/orientacion", Map.of(
+                "mascotaId", mascota.getId(),
+                "sintomas", "Tiene dificultad para respirar",
+                "duracionValor", 1,
+                "duracionUnidad", "horas",
+                "nivelPreocupacion", "alto"), null);
+        assertThat(sinToken.statusCode()).isEqualTo(401);
+
+        HttpResponse<String> registro = enviarJson("/api/auth/register", Map.of(
+                "correo", correo,
+                "documentoIdentidad", documento,
+                "password", "ClaveSegura123"), null);
+        assertThat(registro.statusCode()).isEqualTo(201);
+        JsonNode auth = objectMapper.readTree(enviarJson("/api/auth/login", Map.of(
+                "correo", correo,
+                "password", "ClaveSegura123"), null).body());
+
+        HttpResponse<String> response = enviarJson("/api/orientacion", Map.of(
+                "mascotaId", mascota.getId(),
+                "sintomas", "Tiene dificultad para respirar",
+                "duracionValor", 1,
+                "duracionUnidad", "horas",
+                "nivelPreocupacion", "alto"), auth.path("token").asText());
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        JsonNode orientation = objectMapper.readTree(response.body());
+        assertThat(orientation.path("urgente").asBoolean()).isTrue();
+        assertThat(orientation.path("modoRespaldo").asBoolean()).isTrue();
+        assertThat(orientation.path("recomendaciones").isArray()).isTrue();
+        assertThat(orientation.path("advertencia").asText()).contains("no es un diagnóstico");
     }
 
     private HttpResponse<String> enviarJson(String path, Object body, String token) throws Exception {

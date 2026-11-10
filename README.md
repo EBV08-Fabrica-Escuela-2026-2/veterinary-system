@@ -14,7 +14,7 @@ Backend REST para el sistema de gestión veterinaria desarrollado en la Fábrica
 - SpringDoc OpenAPI / Swagger UI
 - Maven
 
-El proyecto incluye las dependencias de JWT, pero la autenticación y la emisión de tokens todavía están pendientes de implementación.
+La autenticación usa JWT y controla el acceso a las rutas según el rol de la sesión.
 
 ## Requisitos
 
@@ -100,6 +100,28 @@ La API queda disponible en [http://localhost:8080](http://localhost:8080).
 |---|---|---|
 | `GET` | `/api/catalogo` | Lista los veterinarios activos con sus servicios activos |
 | `GET` | `/api/catalogo/veterinarios/{id}` | Consulta el detalle de un veterinario |
+
+### Orientación inteligente
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/orientacion` | Analiza síntomas con Gemini y sugiere hasta tres servicios activos relacionados, junto con veterinarios que los ofrecen |
+
+La ruta requiere un token de cliente (`Authorization: Bearer <token>`). El backend verifica que la mascota pertenezca al cliente autenticado y solo envía a Gemini la especie, edad, síntomas, duración, preocupación y opciones del catálogo; no envía nombres, identificadores ni datos de contacto. La respuesta nunca acepta servicios ni profesionales fuera del catálogo activo. No es un diagnóstico y las señales de alarma muestran una indicación de buscar atención inmediata.
+
+Configura `GEMINI_API_KEY` como variable secreta del backend. `GEMINI_MODEL` permite cambiar el modelo y usa `gemini-2.5-flash` por defecto. Sin clave, ante un error del proveedor o una respuesta inválida, la API marca `modoRespaldo` y solo devuelve coincidencias textuales claras con servicios activos; si no hay coincidencias suficientes, no recomienda servicios. No se debe configurar la clave en el frontend ni versionarla.
+
+Ejemplo del cuerpo:
+
+```json
+{
+  "mascotaId": 12,
+  "sintomas": "Presenta irritación en la piel desde ayer",
+  "duracionValor": 1,
+  "duracionUnidad": "dias",
+  "nivelPreocupacion": "moderado"
+}
+```
 
 ### Clientes
 
