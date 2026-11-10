@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                         .requestMatchers("/api/veterinario-portal/**").hasRole("VETERINARIO")
                         .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers("/api/orientacion/**").hasRole("CLIENTE")
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/catalogo/**").permitAll()
                         .requestMatchers("/api/clientes/**").permitAll()
