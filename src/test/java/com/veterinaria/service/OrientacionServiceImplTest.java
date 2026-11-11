@@ -85,12 +85,61 @@ class OrientacionServiceImplTest {
         assertThat(response.modoRespaldo()).isTrue();
         assertThat(response.recomendaciones()).extracting(OrientacionResponseDTO.ServicioRecomendadoDTO::servicioId)
                 .containsExactly(31L);
-        assertThat(response.recomendaciones().getFirst().explicacion()).contains("coincide");
+        assertThat(response.recomendaciones().getFirst().explicacion()).contains("piel");
     }
 
     @Test
-    void noSugiereServiciosCuandoNoExisteUnaCoincidenciaEnElRespaldo() {
+    void sugiereDermatologiaParaPicazonAunqueGeminiNoDevuelvaOpciones() {
         configurarMascota();
+        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
+                .thenReturn(new Resultado(false, List.of()));
+
+        OrientacionResponseDTO response = orientacionService.orientar(
+                "cliente@example.com", solicitud("Tiene pizazon en las orejas y ronchas"));
+
+        assertThat(response.modoRespaldo()).isTrue();
+        assertThat(response.recomendaciones())
+                .extracting(OrientacionResponseDTO.ServicioRecomendadoDTO::servicioId)
+                .containsExactly(31L);
+        assertThat(response.recomendaciones().getFirst().explicacion()).contains("picazón");
+    }
+
+    @Test
+    void sugiereCirugiaParaFracturaPeroNoCirugiaCardiaca() {
+        configurarMascota();
+        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
+                .thenReturn(new Resultado(false, List.of()));
+
+        OrientacionResponseDTO response = orientacionService.orientar(
+                "cliente@example.com", solicitud("Posible fractura en una pata tras una caída"));
+
+        assertThat(response.modoRespaldo()).isTrue();
+        assertThat(response.recomendaciones())
+                .extracting(OrientacionResponseDTO.ServicioRecomendadoDTO::servicioId)
+                .containsExactly(33L);
+        assertThat(response.recomendaciones().getFirst().nombre()).isEqualTo("Cirugía Mayor");
+    }
+
+    @Test
+    void sugiereConsultaGeneralParaSintomasSinEspecialidadRelacionada() {
+        configurarMascota();
+        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
+                .thenReturn(new Resultado(false, List.of()));
+
+        OrientacionResponseDTO response = orientacionService.orientar(
+                "cliente@example.com", solicitud("Presenta tos persistente"));
+
+        assertThat(response.modoRespaldo()).isTrue();
+        assertThat(response.recomendaciones())
+                .extracting(OrientacionResponseDTO.ServicioRecomendadoDTO::servicioId)
+                .containsExactly(35L);
+        assertThat(response.recomendaciones().getFirst().nombre()).isEqualTo("Consulta General");
+    }
+
+    @Test
+    void noSugiereServiciosCuandoNoHayCoincidenciasNiConsultaGeneral() {
+        configurarMascota();
+        when(catalogoService.consultarCatalogo()).thenReturn(catalogoSinConsultaGeneral());
         when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
                 .thenThrow(new OrientacionAiException("Gemini temporalmente no disponible."));
 
@@ -152,11 +201,41 @@ class OrientacionServiceImplTest {
                 .precio(70000L)
                 .duracionMinutos(30)
                 .build();
+        ServicioCatalogoDTO cirugiaMayor = ServicioCatalogoDTO.builder()
+                .id(33L)
+                .nombre("Cirugía Mayor")
+                .descripcion("Procedimiento quirúrgico complejo")
+                .precio(350000L)
+                .duracionMinutos(120)
+                .build();
+        ServicioCatalogoDTO cirugiaCardiaca = ServicioCatalogoDTO.builder()
+                .id(34L)
+                .nombre("Cirugía Cardíaca")
+                .descripcion("Procedimiento cardíaco especializado")
+                .precio(2500000L)
+                .duracionMinutos(180)
+                .build();
+        ServicioCatalogoDTO consultaGeneral = ServicioCatalogoDTO.builder()
+                .id(35L)
+                .nombre("Consulta General")
+                .descripcion("Revisión completa del paciente")
+                .precio(85000L)
+                .duracionMinutos(30)
+                .build();
         VeterinarioCatalogoDTO veterinario = VeterinarioCatalogoDTO.builder()
                 .id(7L)
                 .nombre("Dra. Real")
-                .servicios(List.of(servicioPiel, servicioDental))
+                .servicios(List.of(servicioPiel, servicioDental, cirugiaMayor, cirugiaCardiaca, consultaGeneral))
                 .build();
         return CatalogoResponseDTO.builder().veterinarios(List.of(veterinario)).moneda("COP").build();
+    }
+
+    private CatalogoResponseDTO catalogoSinConsultaGeneral() {
+        CatalogoResponseDTO catalogo = catalogo();
+        VeterinarioCatalogoDTO veterinario = catalogo.getVeterinarios().getFirst();
+        veterinario.setServicios(veterinario.getServicios().stream()
+                .filter(servicio -> !servicio.getId().equals(35L))
+                .toList());
+        return catalogo;
     }
 }
