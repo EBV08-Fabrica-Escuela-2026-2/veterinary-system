@@ -46,7 +46,8 @@ public class OrientacionServiceImpl implements OrientacionService {
             "preocupacion", "alto", "moderado", "bajo", "horas", "dias", "semanas", "anos",
             "presenta", "presentan", "observa", "observan", "animal", "animales");
     private static final List<String> SINTOMAS_PIEL = List.of(
-            "picazon", "pizazon", "comezon", "prurito", "roncha", "sarpullido", "rasca", "rascado",
+            "picazon", "picason", "pizacon", "pizazon", "comezon", "prurito", "roncha", "sarpullido",
+            "rasca", "rascado",
             "irritacion en la piel", "problema de piel", "alergia en la piel");
     private static final List<String> SERVICIOS_PIEL = List.of(
             "dermatolog", "problema de piel", "problemas de piel", "tratamiento de piel");
@@ -57,13 +58,21 @@ public class OrientacionServiceImpl implements OrientacionService {
             "cirugia", "quirurg", "ortoped", "traumatolog", "fractura");
     private static final List<String> SERVICIOS_NO_TRAUMA = List.of(
             "cardiac", "corazon", "oftalm");
+    private static final List<String> SINTOMAS_DIGESTIVOS = List.of(
+            "dolor abdominal", "dolro abdominal", "dolor abdomial", "dolor de estomago",
+            "dolor en la barriga", "vomito", "vomitos", "vomitando", "nausea", "nauseas",
+            "arcadas", "diarrea", "abdomen doloroso");
+    private static final List<String> SERVICIOS_DIGESTIVOS = List.of(
+            "ecografia", "ultrasonido", "gastroenterolog", "medicina interna");
     private static final List<String> SERVICIOS_CONSULTA_GENERAL = List.of(
-            "consulta general", "medicina general", "consulta veterinaria", "valoracion general");
+            "consulta general", "medicina general", "consulta veterinaria", "valoracion general",
+            "control veterinario", "revision completa del paciente");
     private static final List<String> SIGNOS_ALARMA = List.of(
             "no puede respirar", "dificultad para respirar", "dejo de respirar",
             "convulsion", "inconsciente", "no responde", "sangrado abundante",
             "sangra mucho", "intoxicacion", "ingirio veneno", "golpe de calor",
-            "abdomen muy hinchado", "encías palidas", "encias palidas");
+            "abdomen muy hinchado", "abdomen hinchado", "vomito con sangre",
+            "vomita sangre", "vomitos con sangre", "encias palidas");
 
     private final ClienteRepository clienteRepository;
     private final MascotaRepository mascotaRepository;
@@ -205,18 +214,22 @@ public class OrientacionServiceImpl implements OrientacionService {
                     servicios, coincidencias, SERVICIOS_TRAUMA, SERVICIOS_NO_TRAUMA,
                     "Una posible fractura o lesión por trauma requiere valoración veterinaria; este servicio ofrece atención quirúrgica o relacionada.");
         }
+        if (coincideConAlguno(sintomasNormalizados, SINTOMAS_DIGESTIVOS)) {
+            agregarCoincidenciasEspecialidad(
+                    servicios, coincidencias, SERVICIOS_DIGESTIVOS, List.of(),
+                    "El dolor abdominal y los vómitos pueden requerir valoración veterinaria y, si está disponible, un examen de imagen.");
+            agregarConsultaGeneral(
+                    servicios, coincidencias, 5,
+                    "Una consulta general permite valorar el dolor abdominal y los vómitos y definir los siguientes pasos.");
+        }
 
         if (coincidencias.isEmpty()) {
             agregarCoincidenciasTextuales(sintomas, servicios, coincidencias);
         }
         if (coincidencias.isEmpty()) {
-            servicios.values().stream()
-                    .filter(disponible -> coincideConAlguno(
-                            textoServicio(disponible), SERVICIOS_CONSULTA_GENERAL))
-                    .forEach(disponible -> coincidencias.put(
-                            disponible.servicio().getId(),
-                            new CoincidenciaCatalogo(1,
-                                    "Una consulta general permite que un veterinario valore los síntomas y determine la atención adecuada.")));
+            agregarConsultaGeneral(
+                    servicios, coincidencias, 1,
+                    "Una consulta general permite que un veterinario valore los síntomas y determine la atención adecuada.");
         }
 
         return coincidencias.entrySet().stream()
@@ -230,6 +243,18 @@ public class OrientacionServiceImpl implements OrientacionService {
                 .limit(MAX_RECOMMENDATIONS)
                 .map(item -> new ServicioSeleccionado(item.getKey(), item.getValue().explicacion()))
                 .toList();
+    }
+
+    private void agregarConsultaGeneral(
+            Map<Long, ServicioDisponible> servicios,
+            Map<Long, CoincidenciaCatalogo> coincidencias,
+            int puntaje,
+            String explicacion) {
+        servicios.values().stream()
+                .filter(disponible -> coincideConAlguno(
+                        textoServicio(disponible), SERVICIOS_CONSULTA_GENERAL))
+                .forEach(disponible -> coincidencias.putIfAbsent(
+                        disponible.servicio().getId(), new CoincidenciaCatalogo(puntaje, explicacion)));
     }
 
     private void agregarCoincidenciasEspecialidad(

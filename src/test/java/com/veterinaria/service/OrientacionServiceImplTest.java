@@ -95,13 +95,13 @@ class OrientacionServiceImplTest {
                 .thenReturn(new Resultado(false, List.of()));
 
         OrientacionResponseDTO response = orientacionService.orientar(
-                "cliente@example.com", solicitud("Tiene pizazon en las orejas y ronchas"));
+                "cliente@example.com", solicitud("Tiene pizacon en la nuca"));
 
         assertThat(response.modoRespaldo()).isTrue();
         assertThat(response.recomendaciones())
                 .extracting(OrientacionResponseDTO.ServicioRecomendadoDTO::servicioId)
                 .containsExactly(31L);
-        assertThat(response.recomendaciones().getFirst().explicacion()).contains("picazón");
+        assertThat(response.recomendaciones().getFirst().nombre()).contains("dermatológica");
     }
 
     @Test
@@ -134,6 +134,24 @@ class OrientacionServiceImplTest {
                 .extracting(OrientacionResponseDTO.ServicioRecomendadoDTO::servicioId)
                 .containsExactly(35L);
         assertThat(response.recomendaciones().getFirst().nombre()).isEqualTo("Consulta General");
+    }
+
+    @Test
+    void sugiereEcografiaYConsultaGeneralParaDolorAbdominalYVomitos() {
+        configurarMascota();
+        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
+                .thenReturn(new Resultado(false, List.of()));
+
+        OrientacionResponseDTO response = orientacionService.orientar(
+                "cliente@example.com", solicitud("Tiene dolro abdominal y vomitos"));
+
+        assertThat(response.modoRespaldo()).isTrue();
+        assertThat(response.recomendaciones())
+                .extracting(OrientacionResponseDTO.ServicioRecomendadoDTO::servicioId)
+                .containsExactly(36L, 35L);
+        assertThat(response.recomendaciones())
+                .extracting(OrientacionResponseDTO.ServicioRecomendadoDTO::nombre)
+                .containsExactly("Ecografía", "Consulta General");
     }
 
     @Test
@@ -222,10 +240,18 @@ class OrientacionServiceImplTest {
                 .precio(85000L)
                 .duracionMinutos(30)
                 .build();
+        ServicioCatalogoDTO ecografia = ServicioCatalogoDTO.builder()
+                .id(36L)
+                .nombre("Ecografía")
+                .descripcion("Examen de ultrasonido")
+                .precio(95000L)
+                .duracionMinutos(30)
+                .build();
         VeterinarioCatalogoDTO veterinario = VeterinarioCatalogoDTO.builder()
                 .id(7L)
                 .nombre("Dra. Real")
-                .servicios(List.of(servicioPiel, servicioDental, cirugiaMayor, cirugiaCardiaca, consultaGeneral))
+                .servicios(List.of(
+                        servicioPiel, servicioDental, cirugiaMayor, cirugiaCardiaca, consultaGeneral, ecografia))
                 .build();
         return CatalogoResponseDTO.builder().veterinarios(List.of(veterinario)).moneda("COP").build();
     }
