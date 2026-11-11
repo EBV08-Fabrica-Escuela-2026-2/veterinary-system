@@ -95,7 +95,6 @@ public class OrientacionServiceImpl implements OrientacionService {
                     solicitud.sintomas().trim(),
                     solicitud.duracionValor(),
                     solicitud.duracionUnidad().name(),
-                    solicitud.nivelPreocupacion().name(),
                     candidatos);
             urgente = urgente || resultado.urgente();
             seleccionados = filtrarSeleccionados(resultado.recomendaciones(), coincidencias);

@@ -10,7 +10,6 @@ public interface OrientacionAiClient {
             String sintomas,
             int duracionValor,
             String duracionUnidad,
-            String nivelPreocupacion,
             List<ServicioCandidato> servicios);
 
     record ServicioCandidato(Long id, String nombre, String descripcion) {

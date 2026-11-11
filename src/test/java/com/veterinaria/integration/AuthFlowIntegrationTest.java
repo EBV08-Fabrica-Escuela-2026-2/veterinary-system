@@ -127,8 +127,7 @@ class AuthFlowIntegrationTest {
                 "mascotaId", mascota.getId(),
                 "sintomas", "Tiene dificultad para respirar",
                 "duracionValor", 1,
-                "duracionUnidad", "horas",
-                "nivelPreocupacion", "alto"), null);
+                "duracionUnidad", "horas"), null);
         assertThat(sinToken.statusCode()).isEqualTo(401);
 
         HttpResponse<String> registro = enviarJson("/api/auth/register", Map.of(
@@ -144,8 +143,7 @@ class AuthFlowIntegrationTest {
                 "mascotaId", mascota.getId(),
                 "sintomas", "Tiene dificultad para respirar",
                 "duracionValor", 1,
-                "duracionUnidad", "horas",
-                "nivelPreocupacion", "alto"), auth.path("token").asText());
+                "duracionUnidad", "horas"), auth.path("token").asText());
 
         assertThat(response.statusCode()).isEqualTo(200);
         JsonNode orientation = objectMapper.readTree(response.body());
