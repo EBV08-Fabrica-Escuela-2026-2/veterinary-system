@@ -12,7 +12,7 @@ public interface OrientacionAiClient {
             String duracionUnidad,
             List<ServicioCandidato> servicios);
 
-    record ServicioCandidato(Long id, String nombre, String descripcion) {
+    record ServicioCandidato(Long id, String nombre, String descripcion, String categoria) {
     }
 
     record ServicioSeleccionado(Long servicioId, String explicacion) {

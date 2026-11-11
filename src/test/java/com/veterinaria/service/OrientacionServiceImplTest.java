@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,6 +29,7 @@ import com.veterinaria.model.Mascota;
 import com.veterinaria.repository.ClienteRepository;
 import com.veterinaria.repository.MascotaRepository;
 import com.veterinaria.service.OrientacionAiClient.Resultado;
+import com.veterinaria.service.OrientacionAiClient.ServicioCandidato;
 import com.veterinaria.service.OrientacionAiClient.ServicioSeleccionado;
 import com.veterinaria.service.impl.OrientacionServiceImpl;
 
@@ -71,6 +73,26 @@ class OrientacionServiceImplTest {
                 .containsExactly(new OrientacionResponseDTO.VeterinarioSugeridoDTO(7L, "Dra. Real"));
         verify(aiClient).analizar(
                 eq("Perro"), eq(4), eq("irritación en la piel"), eq(2), eq("dias"), anyList());
+    }
+
+    @Test
+    void enviaAIAutomaticamenteServiciosNuevosDelCatalogoConSuCategoria() {
+        configurarMascota();
+        when(catalogoService.consultarCatalogo()).thenReturn(catalogoConServicioAgregado());
+        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
+                .thenReturn(new Resultado(false, List.of(
+                        new ServicioSeleccionado(37L, "El servicio corresponde a los síntomas descritos."))));
+
+        OrientacionResponseDTO response = orientacionService.orientar(
+                "cliente@example.com", solicitud("Presenta molestias en los ojos"));
+
+        assertThat(response.recomendaciones())
+                .extracting(OrientacionResponseDTO.ServicioRecomendadoDTO::servicioId)
+                .containsExactly(37L);
+        verify(aiClient).analizar(
+                anyString(), anyInt(), anyString(), anyInt(), anyString(),
+                argThat(servicios -> servicios.contains(
+                        new ServicioCandidato(37L, "Atención ocular", "Evaluación de molestias en los ojos", "Oftalmología"))));
     }
 
     @Test
@@ -209,6 +231,7 @@ class OrientacionServiceImplTest {
                 .id(31L)
                 .nombre("Consulta dermatológica")
                 .descripcion("Valoración de piel e irritación en mascotas")
+                .categoria("Dermatología")
                 .precio(80000L)
                 .duracionMinutos(30)
                 .build();
@@ -216,6 +239,7 @@ class OrientacionServiceImplTest {
                 .id(32L)
                 .nombre("Limpieza dental")
                 .descripcion("Higiene y valoración de dientes")
+                .categoria("Odontología")
                 .precio(70000L)
                 .duracionMinutos(30)
                 .build();
@@ -223,6 +247,7 @@ class OrientacionServiceImplTest {
                 .id(33L)
                 .nombre("Cirugía Mayor")
                 .descripcion("Procedimiento quirúrgico complejo")
+                .categoria("Cirugía")
                 .precio(350000L)
                 .duracionMinutos(120)
                 .build();
@@ -230,6 +255,7 @@ class OrientacionServiceImplTest {
                 .id(34L)
                 .nombre("Cirugía Cardíaca")
                 .descripcion("Procedimiento cardíaco especializado")
+                .categoria("Cardiología")
                 .precio(2500000L)
                 .duracionMinutos(180)
                 .build();
@@ -237,6 +263,7 @@ class OrientacionServiceImplTest {
                 .id(35L)
                 .nombre("Consulta General")
                 .descripcion("Revisión completa del paciente")
+                .categoria("Consulta")
                 .precio(85000L)
                 .duracionMinutos(30)
                 .build();
@@ -244,6 +271,7 @@ class OrientacionServiceImplTest {
                 .id(36L)
                 .nombre("Ecografía")
                 .descripcion("Examen de ultrasonido")
+                .categoria("Diagnóstico por imagen")
                 .precio(95000L)
                 .duracionMinutos(30)
                 .build();
@@ -254,6 +282,22 @@ class OrientacionServiceImplTest {
                         servicioPiel, servicioDental, cirugiaMayor, cirugiaCardiaca, consultaGeneral, ecografia))
                 .build();
         return CatalogoResponseDTO.builder().veterinarios(List.of(veterinario)).moneda("COP").build();
+    }
+
+    private CatalogoResponseDTO catalogoConServicioAgregado() {
+        CatalogoResponseDTO catalogo = catalogo();
+        VeterinarioCatalogoDTO veterinario = catalogo.getVeterinarios().getFirst();
+        ServicioCatalogoDTO servicioAgregado = ServicioCatalogoDTO.builder()
+                .id(37L)
+                .nombre("Atención ocular")
+                .descripcion("Evaluación de molestias en los ojos")
+                .categoria("Oftalmología")
+                .precio(90000L)
+                .duracionMinutos(30)
+                .build();
+        veterinario.setServicios(new java.util.ArrayList<>(veterinario.getServicios()));
+        veterinario.getServicios().add(servicioAgregado);
+        return catalogo;
     }
 
     private CatalogoResponseDTO catalogoSinConsultaGeneral() {

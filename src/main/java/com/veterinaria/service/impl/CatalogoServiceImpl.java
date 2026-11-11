@@ -107,6 +107,7 @@ public class CatalogoServiceImpl implements CatalogoService {
                 .descripcion(servicio.getDescripcion())
                 .precio(servicio.getPrecio().longValue())
                 .duracionMinutos(servicio.getDuracionMinutos())
+                .categoria(servicio.getCategoria())
                 .build();
     }
 }

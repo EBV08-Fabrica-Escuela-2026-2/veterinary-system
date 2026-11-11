@@ -26,4 +26,7 @@ public class ServicioCatalogoDTO {
 
     @Schema(description = "Duración del servicio en minutos", example = "30")
     private Integer duracionMinutos;
+
+    @Schema(description = "Categoría del servicio", example = "Consulta")
+    private String categoria;
 }

@@ -63,7 +63,37 @@ public class OrientacionServiceImpl implements OrientacionService {
             "dolor en la barriga", "vomito", "vomitos", "vomitando", "nausea", "nauseas",
             "arcadas", "diarrea", "abdomen doloroso");
     private static final List<String> SERVICIOS_DIGESTIVOS = List.of(
-            "ecografia", "ultrasonido", "gastroenterolog", "medicina interna");
+            "ecografia", "ultrasonido", "gastroenterolog", "medicina interna", "digestiv");
+    private static final List<String> SINTOMAS_RESPIRATORIOS = List.of(
+            "tos", "estornudo", "estornudos", "respira rapido", "respiracion agitada", "silbido al respirar",
+            "secrecion nasal", "moqueo", "congestion", "dificultad para respirar");
+    private static final List<String> SERVICIOS_RESPIRATORIOS = List.of(
+            "respirator", "neumolog", "medicina interna");
+    private static final List<String> SINTOMAS_URINARIOS = List.of(
+            "no puede orinar", "dificultad para orinar", "orina con sangre", "sangre en la orina",
+            "orina muchas veces", "orina poco", "no orina", "problema urinario", "problemas urinarios");
+    private static final List<String> SERVICIOS_URINARIOS = List.of(
+            "urolog", "nefrolog", "urinari", "medicina interna");
+    private static final List<String> SINTOMAS_OCULARES = List.of(
+            "ojo rojo", "ojos rojos", "lagrimeo", "secrecion en el ojo", "ojo cerrado",
+            "hinchazon del ojo", "problema ocular", "problema en los ojos");
+    private static final List<String> SERVICIOS_OCULARES = List.of(
+            "oftalm", "ocular", "ojos");
+    private static final List<String> SINTOMAS_OIDOS = List.of(
+            "dolor de oido", "dolor en el oido", "orejas rojas", "sacude la cabeza",
+            "se rasca las orejas", "secrecion en el oido", "problema de oido");
+    private static final List<String> SERVICIOS_OIDOS = List.of(
+            "otorrino", "oido", "auditiv", "dermatolog");
+    private static final List<String> SINTOMAS_DENTALES = List.of(
+            "dolor dental", "dolor de dientes", "mal aliento", "diente roto",
+            "dientes sucios", "problema dental", "no puede masticar");
+    private static final List<String> SERVICIOS_DENTALES = List.of(
+            "odontolog", "dental", "dent");
+    private static final List<String> SINTOMAS_MOVILIDAD = List.of(
+            "cojea", "cojera", "no apoya la pata", "no puede caminar", "dificultad para caminar",
+            "dolor en la pata", "pata hinchada", "dolor articular", "dolor en las articulaciones");
+    private static final List<String> SERVICIOS_MOVILIDAD = List.of(
+            "ortoped", "traumatolog", "rehabilit", "fisioterap", "cirugia", "quirurg");
     private static final List<String> SERVICIOS_CONSULTA_GENERAL = List.of(
             "consulta general", "medicina general", "consulta veterinaria", "valoracion general",
             "control veterinario", "revision completa del paciente");
@@ -102,10 +132,13 @@ public class OrientacionServiceImpl implements OrientacionService {
         Map<Long, ServicioDisponible> servicios = construirCatalogo();
         Set<Long> coincidencias = new HashSet<>(servicios.keySet());
         List<ServicioCandidato> candidatos = servicios.values().stream()
+                .sorted((primero, segundo) -> Long.compare(
+                        primero.servicio().getId(), segundo.servicio().getId()))
                 .map(item -> new ServicioCandidato(
                         item.servicio().getId(),
                         item.servicio().getNombre(),
-                        item.servicio().getDescripcion() == null ? "" : item.servicio().getDescripcion()))
+                        item.servicio().getDescripcion() == null ? "" : item.servicio().getDescripcion(),
+                        item.servicio().getCategoria() == null ? "" : item.servicio().getCategoria()))
                 .toList();
 
         boolean urgente = contieneSignoAlarma(solicitud.sintomas());
@@ -222,6 +255,36 @@ public class OrientacionServiceImpl implements OrientacionService {
                     servicios, coincidencias, 5,
                     "Una consulta general permite valorar el dolor abdominal y los vómitos y definir los siguientes pasos.");
         }
+        if (coincideConAlguno(sintomasNormalizados, SINTOMAS_RESPIRATORIOS)) {
+            agregarCoincidenciasEspecialidad(
+                    servicios, coincidencias, SERVICIOS_RESPIRATORIOS, List.of(),
+                    "Los síntomas respiratorios descritos requieren valoración veterinaria; este servicio puede orientar la evaluación.");
+        }
+        if (coincideConAlguno(sintomasNormalizados, SINTOMAS_URINARIOS)) {
+            agregarCoincidenciasEspecialidad(
+                    servicios, coincidencias, SERVICIOS_URINARIOS, List.of(),
+                    "Los cambios al orinar requieren valoración veterinaria; este servicio puede orientar la evaluación.");
+        }
+        if (coincideConAlguno(sintomasNormalizados, SINTOMAS_OCULARES)) {
+            agregarCoincidenciasEspecialidad(
+                    servicios, coincidencias, SERVICIOS_OCULARES, List.of(),
+                    "Los síntomas en los ojos pueden valorarse en este servicio.");
+        }
+        if (coincideConAlguno(sintomasNormalizados, SINTOMAS_OIDOS)) {
+            agregarCoincidenciasEspecialidad(
+                    servicios, coincidencias, SERVICIOS_OIDOS, List.of(),
+                    "La molestia descrita en los oídos puede valorarse en este servicio.");
+        }
+        if (coincideConAlguno(sintomasNormalizados, SINTOMAS_DENTALES)) {
+            agregarCoincidenciasEspecialidad(
+                    servicios, coincidencias, SERVICIOS_DENTALES, List.of(),
+                    "La molestia descrita en los dientes puede valorarse en este servicio.");
+        }
+        if (coincideConAlguno(sintomasNormalizados, SINTOMAS_MOVILIDAD)) {
+            agregarCoincidenciasEspecialidad(
+                    servicios, coincidencias, SERVICIOS_MOVILIDAD, SERVICIOS_NO_TRAUMA,
+                    "La dificultad para caminar o el dolor en una pata pueden requerir valoración musculoesquelética.");
+        }
 
         if (coincidencias.isEmpty()) {
             agregarCoincidenciasTextuales(sintomas, servicios, coincidencias);
@@ -293,7 +356,8 @@ public class OrientacionServiceImpl implements OrientacionService {
 
     private String textoServicio(ServicioDisponible disponible) {
         return normalizar(disponible.servicio().getNombre() + " "
-                + (disponible.servicio().getDescripcion() == null ? "" : disponible.servicio().getDescripcion()));
+                + (disponible.servicio().getDescripcion() == null ? "" : disponible.servicio().getDescripcion())
+                + " " + (disponible.servicio().getCategoria() == null ? "" : disponible.servicio().getCategoria()));
     }
 
     private boolean coincideConAlguno(String textoNormalizado, List<String> frases) {
