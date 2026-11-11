@@ -45,6 +45,20 @@ public class OrientacionServiceImpl implements OrientacionService {
             "poco", "mascota", "mascotas", "perro", "perra", "gato", "gata", "sintoma", "sintomas",
             "preocupacion", "alto", "moderado", "bajo", "horas", "dias", "semanas", "anos",
             "presenta", "presentan", "observa", "observan", "animal", "animales");
+    private static final List<String> SINTOMAS_PIEL = List.of(
+            "picazon", "pizazon", "comezon", "prurito", "roncha", "sarpullido", "rasca", "rascado",
+            "irritacion en la piel", "problema de piel", "alergia en la piel");
+    private static final List<String> SERVICIOS_PIEL = List.of(
+            "dermatolog", "problema de piel", "problemas de piel", "tratamiento de piel");
+    private static final List<String> SINTOMAS_TRAUMA = List.of(
+            "fractura", "fracturado", "hueso roto", "hueso quebrado", "quebradura", "traumatismo",
+            "atropellamiento", "atropellado", "golpe fuerte", "caida fuerte");
+    private static final List<String> SERVICIOS_TRAUMA = List.of(
+            "cirugia", "quirurg", "ortoped", "traumatolog", "fractura");
+    private static final List<String> SERVICIOS_NO_TRAUMA = List.of(
+            "cardiac", "corazon", "oftalm");
+    private static final List<String> SERVICIOS_CONSULTA_GENERAL = List.of(
+            "consulta general", "medicina general", "consulta veterinaria", "valoracion general");
     private static final List<String> SIGNOS_ALARMA = List.of(
             "no puede respirar", "dificultad para respirar", "dejo de respirar",
             "convulsion", "inconsciente", "no responde", "sangrado abundante",
@@ -98,7 +112,7 @@ public class OrientacionServiceImpl implements OrientacionService {
                     candidatos);
             urgente = urgente || resultado.urgente();
             seleccionados = filtrarSeleccionados(resultado.recomendaciones(), coincidencias);
-            if (seleccionados.isEmpty() && !resultado.recomendaciones().isEmpty()) {
+            if (seleccionados.isEmpty()) {
                 modoRespaldo = true;
                 seleccionados = buscarCoincidenciasCatalogo(solicitud.sintomas(), servicios);
             }
@@ -178,31 +192,91 @@ public class OrientacionServiceImpl implements OrientacionService {
     private List<ServicioSeleccionado> buscarCoincidenciasCatalogo(
             String sintomas,
             Map<Long, ServicioDisponible> servicios) {
-        Set<String> terminosSintomas = extraerTerminos(sintomas);
-        if (terminosSintomas.isEmpty()) {
-            return List.of();
+        String sintomasNormalizados = normalizar(sintomas);
+        Map<Long, CoincidenciaCatalogo> coincidencias = new HashMap<>();
+
+        if (coincideConAlguno(sintomasNormalizados, SINTOMAS_PIEL)) {
+            agregarCoincidenciasEspecialidad(
+                    servicios, coincidencias, SERVICIOS_PIEL, List.of(),
+                    "La picazón o las lesiones de piel descritas pueden ser valoradas en este servicio.");
+        }
+        if (coincideConAlguno(sintomasNormalizados, SINTOMAS_TRAUMA)) {
+            agregarCoincidenciasEspecialidad(
+                    servicios, coincidencias, SERVICIOS_TRAUMA, SERVICIOS_NO_TRAUMA,
+                    "Una posible fractura o lesión por trauma requiere valoración veterinaria; este servicio ofrece atención quirúrgica o relacionada.");
         }
 
-        return servicios.values().stream()
-                .map(disponible -> {
-                    String textoServicio = disponible.servicio().getNombre() + " "
-                            + (disponible.servicio().getDescripcion() == null ? "" : disponible.servicio().getDescripcion());
-                    Set<String> terminosServicio = extraerTerminos(textoServicio);
-                    long coincidencias = terminosSintomas.stream().filter(terminosServicio::contains).count();
-                    return Map.entry(disponible.servicio(), coincidencias);
+        if (coincidencias.isEmpty()) {
+            agregarCoincidenciasTextuales(sintomas, servicios, coincidencias);
+        }
+        if (coincidencias.isEmpty()) {
+            servicios.values().stream()
+                    .filter(disponible -> coincideConAlguno(
+                            textoServicio(disponible), SERVICIOS_CONSULTA_GENERAL))
+                    .forEach(disponible -> coincidencias.put(
+                            disponible.servicio().getId(),
+                            new CoincidenciaCatalogo(1,
+                                    "Una consulta general permite que un veterinario valore los síntomas y determine la atención adecuada.")));
+        }
+
+        return coincidencias.entrySet().stream()
+                .sorted((primera, segunda) -> {
+                    int porPertinencia = Integer.compare(
+                            segunda.getValue().puntaje(), primera.getValue().puntaje());
+                    return porPertinencia != 0
+                            ? porPertinencia
+                            : Long.compare(primera.getKey(), segunda.getKey());
                 })
-                .filter(item -> item.getValue() > 0)
-                .sorted(Map.Entry.<ServicioCatalogoDTO, Long>comparingByValue().reversed())
                 .limit(MAX_RECOMMENDATIONS)
-                .map(item -> new ServicioSeleccionado(
-                        item.getKey().getId(),
-                        "El nombre o la descripción del servicio coincide con términos de los síntomas; esta coincidencia no confirma pertinencia clínica."))
+                .map(item -> new ServicioSeleccionado(item.getKey(), item.getValue().explicacion()))
                 .toList();
     }
 
+    private void agregarCoincidenciasEspecialidad(
+            Map<Long, ServicioDisponible> servicios,
+            Map<Long, CoincidenciaCatalogo> coincidencias,
+            List<String> terminosServicio,
+            List<String> terminosExcluidos,
+            String explicacion) {
+        servicios.values().stream()
+                .filter(disponible -> {
+                    String textoServicio = textoServicio(disponible);
+                    return coincideConAlguno(textoServicio, terminosServicio)
+                            && !coincideConAlguno(textoServicio, terminosExcluidos);
+                })
+                .forEach(disponible -> coincidencias.put(
+                        disponible.servicio().getId(), new CoincidenciaCatalogo(10, explicacion)));
+    }
+
+    private void agregarCoincidenciasTextuales(
+            String sintomas,
+            Map<Long, ServicioDisponible> servicios,
+            Map<Long, CoincidenciaCatalogo> coincidencias) {
+        Set<String> terminosSintomas = extraerTerminos(sintomas);
+        servicios.values().forEach(disponible -> {
+            Set<String> terminosServicio = extraerTerminos(textoServicio(disponible));
+            long cantidad = terminosSintomas.stream().filter(terminosServicio::contains).count();
+            if (cantidad > 0) {
+                coincidencias.put(
+                        disponible.servicio().getId(),
+                        new CoincidenciaCatalogo(
+                                (int) cantidad,
+                                "El nombre o la descripción del servicio coincide con términos de los síntomas; esta coincidencia no confirma pertinencia clínica."));
+            }
+        });
+    }
+
+    private String textoServicio(ServicioDisponible disponible) {
+        return normalizar(disponible.servicio().getNombre() + " "
+                + (disponible.servicio().getDescripcion() == null ? "" : disponible.servicio().getDescripcion()));
+    }
+
+    private boolean coincideConAlguno(String textoNormalizado, List<String> frases) {
+        return frases.stream().map(this::normalizar).anyMatch(textoNormalizado::contains);
+    }
+
     private Set<String> extraerTerminos(String texto) {
-        String normalizado = Normalizer.normalize(texto.toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
+        String normalizado = normalizar(texto);
         var matcher = PALABRAS.matcher(normalizado);
         Set<String> terminos = new HashSet<>();
         while (matcher.find()) {
@@ -212,6 +286,11 @@ public class OrientacionServiceImpl implements OrientacionService {
             }
         }
         return terminos;
+    }
+
+    private String normalizar(String texto) {
+        return Normalizer.normalize(texto.toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
     }
 
     private boolean contieneSignoAlarma(String sintomas) {
@@ -227,5 +306,8 @@ public class OrientacionServiceImpl implements OrientacionService {
     private record ServicioDisponible(
             ServicioCatalogoDTO servicio,
             List<OrientacionResponseDTO.VeterinarioSugeridoDTO> veterinarios) {
+    }
+
+    private record CoincidenciaCatalogo(int puntaje, String explicacion) {
     }
 }
