@@ -11,18 +11,11 @@ public record OrientacionRequestDTO(
         @NotNull @Positive Long mascotaId,
         @NotBlank @Size(min = 10, max = 1000) String sintomas,
         @NotNull @Min(1) @Max(365) Integer duracionValor,
-        @NotNull UnidadDuracion duracionUnidad,
-        @NotNull NivelPreocupacion nivelPreocupacion) {
+        @NotNull UnidadDuracion duracionUnidad) {
 
     public enum UnidadDuracion {
         horas,
         dias,
         semanas
-    }
-
-    public enum NivelPreocupacion {
-        bajo,
-        moderado,
-        alto
     }
 }

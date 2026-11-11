@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -18,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.veterinaria.dto.CatalogoResponseDTO;
 import com.veterinaria.dto.OrientacionRequestDTO;
-import com.veterinaria.dto.OrientacionRequestDTO.NivelPreocupacion;
 import com.veterinaria.dto.OrientacionRequestDTO.UnidadDuracion;
 import com.veterinaria.dto.OrientacionResponseDTO;
 import com.veterinaria.dto.ServicioCatalogoDTO;
@@ -57,7 +57,7 @@ class OrientacionServiceImplTest {
     @Test
     void limitaLasRecomendacionesALosServiciosActivosDelCatalogo() {
         configurarMascota();
-        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyString(), anyList()))
+        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
                 .thenReturn(new Resultado(false, List.of(
                         new ServicioSeleccionado(31L, "El servicio contempla valoración de piel."),
                         new ServicioSeleccionado(999L, "Servicio inexistente."))));
@@ -69,12 +69,14 @@ class OrientacionServiceImplTest {
         assertThat(response.recomendaciones().getFirst().servicioId()).isEqualTo(31L);
         assertThat(response.recomendaciones().getFirst().veterinarios())
                 .containsExactly(new OrientacionResponseDTO.VeterinarioSugeridoDTO(7L, "Dra. Real"));
+        verify(aiClient).analizar(
+                eq("Perro"), eq(4), eq("irritación en la piel"), eq(2), eq("dias"), anyList());
     }
 
     @Test
     void siLaIaFallaSoloDevuelveCoincidenciasTextualesDelCatalogo() {
         configurarMascota();
-        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyString(), anyList()))
+        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
                 .thenThrow(new OrientacionAiException("Gemini temporalmente no disponible."));
 
         OrientacionResponseDTO response = orientacionService.orientar(
@@ -89,7 +91,7 @@ class OrientacionServiceImplTest {
     @Test
     void noSugiereServiciosCuandoNoExisteUnaCoincidenciaEnElRespaldo() {
         configurarMascota();
-        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyString(), anyList()))
+        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
                 .thenThrow(new OrientacionAiException("Gemini temporalmente no disponible."));
 
         OrientacionResponseDTO response = orientacionService.orientar(
@@ -103,7 +105,7 @@ class OrientacionServiceImplTest {
     @Test
     void identificaSignosDeAlarmaAunqueLaIaNoLosMarque() {
         configurarMascota();
-        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyString(), anyList()))
+        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
                 .thenReturn(new Resultado(false, List.of()));
 
         OrientacionResponseDTO response = orientacionService.orientar(
@@ -121,11 +123,11 @@ class OrientacionServiceImplTest {
                 () -> orientacionService.orientar("cliente@example.com", solicitud("irritación en la piel")))
                 .isInstanceOf(com.veterinaria.exception.ResourceNotFoundException.class);
         verify(aiClient, org.mockito.Mockito.never())
-                .analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyString(), anyList());
+                .analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList());
     }
 
     private OrientacionRequestDTO solicitud(String sintomas) {
-        return new OrientacionRequestDTO(19L, sintomas, 2, UnidadDuracion.dias, NivelPreocupacion.moderado);
+        return new OrientacionRequestDTO(19L, sintomas, 2, UnidadDuracion.dias);
     }
 
     private void configurarMascota() {
