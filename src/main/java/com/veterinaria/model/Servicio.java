@@ -26,7 +26,7 @@ public class Servicio {
     @Column(nullable = false, length = 100)
     private String nombre;
 
-    @Column(length = 500)
+    @Column(nullable = false, length = 500)
     private String descripcion;
 
     @Column(nullable = false, precision = 10, scale = 2)

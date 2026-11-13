@@ -12,6 +12,7 @@ public class ServicioRegistroDTO {
     @Size(max = 100, message = "El nombre no puede superar los 100 caracteres")
     private String nombre;
 
+    @NotBlank(message = "Este campo es obligatorio")
     @Size(max = 500, message = "La descripción no puede superar los 500 caracteres")
     private String descripcion;
 
