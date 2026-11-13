@@ -85,8 +85,12 @@ public class OrientacionServiceImpl implements OrientacionService {
     private static final List<String> SERVICIOS_OIDOS = List.of(
             "otorrino", "oido", "auditiv", "dermatolog");
     private static final List<String> SINTOMAS_DENTALES = List.of(
-            "dolor dental", "dolor de dientes", "mal aliento", "diente roto",
-            "dientes sucios", "problema dental", "no puede masticar");
+            "dolor dental", "dolor de dientes", "mal aliento", "sarro", "placa dental",
+            "diente roto", "dientes sucios", "problema dental", "problema en los dientes",
+            "le faltan dientes", "le falta un diente", "faltan dientes", "dientes faltantes",
+            "diente faltante", "dientes ausentes", "diente ausente", "perdio un diente",
+            "perdida de dientes", "perdida de un diente", "dientes flojos", "diente flojo",
+            "dolor en la boca", "dolor al masticar", "dificultad para masticar", "no puede masticar");
     private static final List<String> SERVICIOS_DENTALES = List.of(
             "odontolog", "dental", "dent");
     private static final List<String> SINTOMAS_MOVILIDAD = List.of(
@@ -164,6 +168,7 @@ public class OrientacionServiceImpl implements OrientacionService {
             modoRespaldo = true;
             seleccionados = buscarCoincidenciasCatalogo(solicitud.sintomas(), servicios);
         }
+        seleccionados = priorizarOdontologia(solicitud.sintomas(), seleccionados, servicios);
 
         List<OrientacionResponseDTO.ServicioRecomendadoDTO> recomendaciones = seleccionados.stream()
                 .map(seleccionado -> {
@@ -180,7 +185,7 @@ public class OrientacionServiceImpl implements OrientacionService {
                 ? "No encontramos una relación clara entre los síntomas y los servicios activos del catálogo. Consulta directamente con un veterinario."
                 : modoRespaldo
                         ? "No pudimos completar el análisis de IA. Estas opciones se encontraron por coincidencias claras en el catálogo; confirma con un veterinario cuál es adecuada."
-                        : "Las opciones sugeridas se relacionan con lo descrito según la IA y corresponden a servicios activos del catálogo.";
+                        : "Las opciones sugeridas consideran lo descrito y priorizan los servicios activos más relacionados del catálogo.";
 
         return new OrientacionResponseDTO(
                 urgente,
@@ -189,6 +194,39 @@ public class OrientacionServiceImpl implements OrientacionService {
                 mensaje,
                 recomendaciones,
                 ADVERTENCIA);
+    }
+
+    private List<ServicioSeleccionado> priorizarOdontologia(
+            String sintomas,
+            List<ServicioSeleccionado> seleccionados,
+            Map<Long, ServicioDisponible> servicios) {
+        if (!coincideConAlguno(normalizar(sintomas), SINTOMAS_DENTALES)) {
+            return seleccionados;
+        }
+
+        Map<Long, CoincidenciaCatalogo> coincidenciasDentales = new HashMap<>();
+        agregarCoincidenciasEspecialidad(
+                servicios, coincidenciasDentales, SERVICIOS_DENTALES, List.of(),
+                "Los síntomas relacionados con dientes y encías pueden valorarse en odontología; el veterinario determinará la causa y la atención necesaria.");
+        if (coincidenciasDentales.isEmpty()) {
+            return seleccionados;
+        }
+
+        List<ServicioSeleccionado> priorizados = new ArrayList<>();
+        coincidenciasDentales.keySet().stream()
+                .sorted()
+                .forEach(id -> priorizados.add(new ServicioSeleccionado(
+                        id, coincidenciasDentales.get(id).explicacion())));
+        seleccionados.stream()
+                .filter(item -> {
+                    ServicioDisponible disponible = servicios.get(item.servicioId());
+                    return disponible != null
+                            && !coincidenciasDentales.containsKey(item.servicioId())
+                            && !coincideConAlguno(textoServicio(disponible), SERVICIOS_CONSULTA_GENERAL);
+                })
+                .forEach(priorizados::add);
+
+        return priorizados.stream().limit(MAX_RECOMMENDATIONS).toList();
     }
 
     private Map<Long, ServicioDisponible> construirCatalogo() {

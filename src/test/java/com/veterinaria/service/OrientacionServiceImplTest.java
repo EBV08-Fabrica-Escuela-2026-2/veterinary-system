@@ -96,6 +96,25 @@ class OrientacionServiceImplTest {
     }
 
     @Test
+    void priorizaOdontologiaCuandoGeminiSugiereConsultaParaSarroYPerdidaDental() {
+        configurarMascota();
+        when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
+                .thenReturn(new Resultado(false, List.of(
+                        new ServicioSeleccionado(35L, "Una consulta general puede valorar los síntomas."))));
+
+        OrientacionResponseDTO response = orientacionService.orientar(
+                "cliente@example.com", solicitud("Le faltan dientes y tiene sarro"));
+
+        assertThat(response.modoRespaldo()).isFalse();
+        assertThat(response.recomendaciones())
+                .extracting(OrientacionResponseDTO.ServicioRecomendadoDTO::servicioId)
+                .containsExactly(32L);
+        assertThat(response.recomendaciones().getFirst().explicacion())
+                .contains("dientes")
+                .contains("odontología");
+    }
+
+    @Test
     void siLaIaFallaSoloDevuelveCoincidenciasTextualesDelCatalogo() {
         configurarMascota();
         when(aiClient.analizar(anyString(), anyInt(), anyString(), anyInt(), anyString(), anyList()))
