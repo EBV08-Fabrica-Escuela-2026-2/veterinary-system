@@ -32,6 +32,9 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
     @EntityGraph(attributePaths = {"veterinario", "servicio", "canceladaPorVeterinario"})
     Page<Cita> findByMascotaIdAndEstadoIn(Long mascotaId, Collection<String> estados, Pageable pageable);
 
+    List<Cita> findByFechaHoraInicioGreaterThanEqualAndFechaHoraInicioLessThanAndEstadoIn(
+            LocalDateTime desde, LocalDateTime hasta, Collection<String> estados);
+
     boolean existsByMascotaIdAndVeterinarioId(Long mascotaId, Long veterinarioId);
 
         @Lock(LockModeType.PESSIMISTIC_WRITE)

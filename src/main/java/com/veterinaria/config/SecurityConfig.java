@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/citas/*/disponibilidad").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/citas/*/reprogramar").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/citas/*/cancelar-veterinario").hasRole("VETERINARIO")
+                        .requestMatchers("/api/ocupacion/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/citas/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**").permitAll()
                         .anyRequest().authenticated())
