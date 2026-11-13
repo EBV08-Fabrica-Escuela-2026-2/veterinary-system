@@ -29,4 +29,12 @@ public interface CitaService {
     CancelacionCitaDTO cancelarCitaPorVeterinario(Long citaId, Long veterinarioId, String motivo);
 
     EstadoCitaResponseDTO cerrarCitaPorVeterinario(Long citaId, Long veterinarioId, String estado);
+
+    CancelacionCitaDTO cancelarCitaPorProfesional(
+            Long citaId,
+            Long veterinarioId,
+            String responsable,
+            String motivo,
+            String decisionHorario
+    );
 }

@@ -198,6 +198,7 @@ public class CitaController {
             throw new AccessDeniedException("Solo el veterinario asignado puede cancelar esta cita");
         }
 
-        return ResponseEntity.ok(citaService.cancelarCitaPorVeterinario(idCita, veterinario.getId(), dto.getMotivo()));
+        return ResponseEntity.ok(citaService.cancelarCitaPorProfesional(
+                idCita, veterinario.getId(), authentication.getName(), dto.getMotivo(), dto.getDecisionHorario()));
     }
 }

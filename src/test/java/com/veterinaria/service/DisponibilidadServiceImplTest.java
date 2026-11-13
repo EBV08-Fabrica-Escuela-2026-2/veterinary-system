@@ -9,6 +9,7 @@ import com.veterinaria.repository.CitaRepository;
 import com.veterinaria.repository.HorarioAtencionRepository;
 import com.veterinaria.repository.ServicioRepository;
 import com.veterinaria.service.impl.DisponibilidadServiceImpl;
+import com.veterinaria.repository.BloqueoHorarioRepository;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
@@ -41,6 +42,9 @@ class DisponibilidadServiceImplTest {
 
     @Mock
     private Clock clock;
+
+    @Mock
+    private BloqueoHorarioRepository bloqueoHorarioRepository;
 
     @InjectMocks
     private DisponibilidadServiceImpl disponibilidadService;

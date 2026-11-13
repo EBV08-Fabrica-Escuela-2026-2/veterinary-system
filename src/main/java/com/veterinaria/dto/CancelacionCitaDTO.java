@@ -12,7 +12,16 @@ public class CancelacionCitaDTO {
     private boolean cupoLiberado;
     private LocalDateTime fechaHoraInicio;
     private LocalDateTime fechaHoraFin;
+    private String decisionHorario;
 
+    public String getDecisionHorario() {
+        return decisionHorario;
+    }
+
+    public void setDecisionHorario(String decisionHorario) {
+        this.decisionHorario = decisionHorario;
+    }
+    
     public CancelacionCitaDTO() {
     }
 

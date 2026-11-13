@@ -63,6 +63,12 @@ public class Cita {
     @Column(name = "cancelada_at")
     private LocalDateTime canceladaAt;
 
+    @Column(name = "decision_horario", length = 20)
+    private String decisionHorario;
+
+    @Column(name = "cancelada_por", length = 150)
+    private String canceladaPor;
+
     @Column(length = 1000)
     private String diagnostico;
 

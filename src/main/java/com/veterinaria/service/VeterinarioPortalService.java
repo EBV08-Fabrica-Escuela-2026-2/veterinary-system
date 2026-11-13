@@ -42,6 +42,7 @@ public class VeterinarioPortalService {
     private final HorarioAtencionRepository horarioAtencionRepository;
     private final ValidadorFranjasHorarias validador;
 
+        
     @Transactional(readOnly = true)
     public List<CitaVeterinarioDTO> listarCitas(Long veterinarioId) {
         return citaRepository.findByVeterinarioIdOrderByFechaHoraInicioDesc(veterinarioId).stream()
@@ -56,9 +57,11 @@ public class VeterinarioPortalService {
                         cita.getFechaHoraFin(),
                         cita.getEstado(),
                         EstadoCitaTexto.de(cita.getEstado()),
-                        cita.getMotivoCancelacion()))
+                        cita.getMotivoCancelacion(),
+                        cita.getDecisionHorario()))
                 .toList();
     }
+
 
     @Transactional(readOnly = true)
     public DisponibilidadVeterinarioDTO consultarDisponibilidad(Long veterinarioId) {
