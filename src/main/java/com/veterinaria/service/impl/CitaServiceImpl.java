@@ -33,6 +33,8 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import com.veterinaria.model.BloqueoHorario;
+import com.veterinaria.repository.BloqueoHorarioRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -43,17 +45,19 @@ public class CitaServiceImpl implements CitaService {
     public static final String ESTADO_CANCELADA_PROFESIONAL = "CANCELADA_PROFESIONAL";
     public static final String ESTADO_COMPLETADA = "COMPLETADA";
     public static final String ESTADO_NO_ASISTIO = "NO_ASISTIO";
+    public static final String DECISION_LIBERAR_CUPO = "LIBERAR_CUPO";
+    public static final String DECISION_BLOQUEAR_FRANJA = "BLOQUEAR_FRANJA";
     private static final long HORAS_MINIMAS_CANCELACION = 2;
     private static final String SIN_INDICACIONES = "No hay indicaciones especiales";
     private static final long HORAS_MINIMAS_REPROGRAMACION = 4;
     private static final String MENSAJE_ANTICIPACION_REPROGRAMACION = "No es posible reprogramar la cita con cuatro horas o menos de antelación. Por políticas de la clínica, debes comunicarte directamente por vía telefónica.";
-
     private final CitaRepository citaRepository;
     private final ClienteRepository clienteRepository;
     private final MascotaRepository mascotaRepository;
     private final VeterinarioRepository veterinarioRepository;
     private final ServicioRepository servicioRepository;
     private final DisponibilidadService disponibilidadService;
+    private final BloqueoHorarioRepository bloqueoHorarioRepository;
     private final Clock clock;
 
     @Override
@@ -271,13 +275,13 @@ public class CitaServiceImpl implements CitaService {
         dto.setEstado(cita.getEstado());
         dto.setEtiquetaEstado(etiquetaEstado(cita.getEstado()));
         dto.setEstadoTexto(EstadoCitaTexto.de(cita.getEstado()));
-        dto.setCupoLiberado(cupoLiberado(cita.getEstado()));
+        dto.setCupoLiberado(cupoLiberado(cita));
+        dto.setDecisionHorario(cita.getDecisionHorario());
         dto.setMotivoCancelacion(cita.getMotivoCancelacion());
         dto.setCanceladaAt(cita.getCanceladaAt());
         dto.setCreatedAt(cita.getCreatedAt());
         return dto;
     }
-
     public static String etiquetaEstado(String estado) {
         if (ESTADO_CONFIRMADA.equals(estado)) {
             return "Activa";
@@ -364,31 +368,70 @@ public class CitaServiceImpl implements CitaService {
     @Override
     @Transactional
     public CancelacionCitaDTO cancelarCitaPorVeterinario(Long citaId, Long veterinarioId, String motivo) {
-        Cita cita = citaRepository.findByIdForUpdate(citaId)
-                .filter(c -> c.getVeterinario().getId().equals(veterinarioId))
-                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + citaId));
+        return cancelarCitaPorProfesional(citaId, veterinarioId, null, motivo, DECISION_LIBERAR_CUPO);
+    }
+
+    @Override
+    @Transactional
+    public CancelacionCitaDTO cancelarCitaPorProfesional(Long citaId, Long veterinarioId, String responsable,
+            String motivo, String decisionHorario) {
+        String decision = (decisionHorario == null || decisionHorario.isBlank())
+                ? DECISION_LIBERAR_CUPO
+                : decisionHorario.trim().toUpperCase();
+        if (!DECISION_LIBERAR_CUPO.equals(decision) && !DECISION_BLOQUEAR_FRANJA.equals(decision)) {
+            throw new IllegalArgumentException(
+                    "La decisión sobre el horario debe ser LIBERAR_CUPO o BLOQUEAR_FRANJA");
+        }
+        if (motivo == null || motivo.isBlank()) {
+            throw new IllegalArgumentException("El motivo de cancelación es obligatorio");
+        }
+
+        Cita cita = buscarCitaDelProfesional(citaId, veterinarioId);
 
         if (!ESTADO_CONFIRMADA.equals(cita.getEstado())) {
             throw new CancelacionNoPermitidaException(
                     "La cita ya fue completada o cancelada y no puede modificarse");
         }
-        if (!cita.getFechaHoraInicio().isAfter(LocalDateTime.now(clock))) {
+        LocalDateTime ahora = LocalDateTime.now(clock);
+        if (!cita.getFechaHoraInicio().isAfter(ahora)) {
             throw new CancelacionNoPermitidaException("No se puede cancelar una cita que ya inició");
         }
 
+        String motivoLimpio = motivo.trim();
+        String autor = (responsable == null || responsable.isBlank())
+                ? cita.getVeterinario().getCorreo()
+                : responsable;
+
         cita.setEstado(ESTADO_CANCELADA_PROFESIONAL);
-        cita.setMotivoCancelacion(motivo.trim());
-        cita.setCanceladaPorVeterinario(cita.getVeterinario());
-        cita.setCanceladaAt(LocalDateTime.now(clock));
+        cita.setMotivoCancelacion(motivoLimpio);
+        cita.setCanceladaPorVeterinario(veterinarioId != null ? cita.getVeterinario() : null);
+        cita.setCanceladaPor(autor);
+        cita.setCanceladaAt(ahora);
+        cita.setDecisionHorario(decision);
         citaRepository.save(cita);
 
+        boolean bloquear = DECISION_BLOQUEAR_FRANJA.equals(decision);
+        if (bloquear) {
+            bloqueoHorarioRepository.save(BloqueoHorario.builder()
+                    .veterinario(cita.getVeterinario())
+                    .cita(cita)
+                    .fechaHoraInicio(cita.getFechaHoraInicio())
+                    .fechaHoraFin(cita.getFechaHoraFin())
+                    .motivo(motivoLimpio)
+                    .creadoPor(autor)
+                    .build());
+        }
+
         CancelacionCitaDTO dto = new CancelacionCitaDTO();
-        dto.setMensaje("Cita cancelada exitosamente. El horario fue liberado y se notificará a las partes.");
+        dto.setMensaje(bloquear
+                ? "Cita cancelada exitosamente. La franja quedó bloqueada y no se publicará como disponible. Se notificará a las partes."
+                : "Cita cancelada exitosamente. El horario fue liberado y se notificará a las partes.");
         dto.setIdCita(cita.getId());
         dto.setEstado(cita.getEstado());
         dto.setEtiquetaEstado(etiquetaEstado(cita.getEstado()));
         dto.setEstadoTexto(EstadoCitaTexto.de(cita.getEstado()));
-        dto.setCupoLiberado(cupoLiberado(cita.getEstado()));
+        dto.setCupoLiberado(cupoLiberado(cita));
+        dto.setDecisionHorario(decision);
         dto.setFechaHoraInicio(cita.getFechaHoraInicio());
         dto.setFechaHoraFin(cita.getFechaHoraFin());
         return dto;
@@ -401,9 +444,7 @@ public class CitaServiceImpl implements CitaService {
             throw new IllegalArgumentException("El estado debe ser COMPLETADA o NO_ASISTIO");
         }
 
-        Cita cita = citaRepository.findByIdForUpdate(citaId)
-                .filter(item -> item.getVeterinario().getId().equals(veterinarioId))
-                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + citaId));
+        Cita cita = buscarCitaDelProfesional(citaId, veterinarioId);
 
         if (!ESTADO_CONFIRMADA.equals(cita.getEstado())) {
             throw new CancelacionNoPermitidaException(
@@ -426,5 +467,19 @@ public class CitaServiceImpl implements CitaService {
                 "La cita quedó registrada como " + etiqueta.toLowerCase() + " en el historial del cliente y la mascota.",
                 cita.getFechaHoraInicio(),
                 cita.getFechaHoraFin());
+    }
+
+    /** veterinarioId == null significa que actúa un administrador y puede gestionar cualquier cita. */
+    private Cita buscarCitaDelProfesional(Long citaId, Long veterinarioId) {
+        return citaRepository.findByIdForUpdate(citaId)
+                .filter(c -> veterinarioId == null || c.getVeterinario().getId().equals(veterinarioId))
+                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + citaId));
+    }
+
+    private boolean cupoLiberado(Cita cita) {
+        if (ESTADO_CANCELADA_PROFESIONAL.equals(cita.getEstado())) {
+            return !DECISION_BLOQUEAR_FRANJA.equals(cita.getDecisionHorario());
+        }
+        return cupoLiberado(cita.getEstado());
     }
 }

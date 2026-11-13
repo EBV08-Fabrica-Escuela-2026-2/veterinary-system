@@ -14,6 +14,9 @@ import com.veterinaria.service.DisponibilidadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.veterinaria.model.BloqueoHorario;
+import com.veterinaria.repository.BloqueoHorarioRepository;
+
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -31,6 +34,7 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
     private final HorarioAtencionRepository horarioAtencionRepository;
     private final CitaRepository citaRepository;
     private final ServicioRepository servicioRepository;
+    private final BloqueoHorarioRepository bloqueoHorarioRepository;
     private final Clock clock;
 
     @Override
@@ -126,8 +130,11 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
         LocalDateTime desde = fecha.atStartOfDay();
         LocalDateTime hasta = fecha.plusDays(1).atStartOfDay();
         List<Cita> citas = citaRepository
-            .findByVeterinarioIdAndEstadoAndFechaHoraInicioLessThanAndFechaHoraFinGreaterThan(
-                veterinario.getId(), "CONFIRMADA", hasta, desde);
+                .findByVeterinarioIdAndEstadoAndFechaHoraInicioLessThanAndFechaHoraFinGreaterThan(
+                        veterinario.getId(), "CONFIRMADA", hasta, desde);
+        List<BloqueoHorario> bloqueos = bloqueoHorarioRepository
+                .findByVeterinarioIdAndActivoTrueAndFechaHoraInicioLessThanAndFechaHoraFinGreaterThan(
+                        veterinario.getId(), hasta, desde);
 
         LocalDateTime ahora = LocalDateTime.now(clock);
         List<FranjaHorariaDTO> franjas = new ArrayList<>();
@@ -141,10 +148,13 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
                 LocalDateTime slotActual = slot;
                 boolean futuro = slotActual.isAfter(ahora);
                 boolean libre = citas.stream()
-                    .noneMatch(cita -> !Objects.equals(cita.getId(), citaIdExcluir)
-                        && slotActual.isBefore(cita.getFechaHoraFin())
+                        .noneMatch(cita -> !Objects.equals(cita.getId(), citaIdExcluir)
+                                && slotActual.isBefore(cita.getFechaHoraFin())
                                 && finSlot.isAfter(cita.getFechaHoraInicio()));
-                if (futuro && libre) {
+                boolean bloqueado = bloqueos.stream()
+                        .anyMatch(b -> slotActual.isBefore(b.getFechaHoraFin())
+                                && finSlot.isAfter(b.getFechaHoraInicio()));
+                if (futuro && libre && !bloqueado) {
                     franjas.add(new FranjaHorariaDTO(slotActual.toLocalTime(), finSlot.toLocalTime()));
                 }
                 slot = finSlot;

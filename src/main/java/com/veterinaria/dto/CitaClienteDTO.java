@@ -17,6 +17,15 @@ public class CitaClienteDTO {
     private String motivoCancelacion;
     private LocalDateTime canceladaAt;
     private LocalDateTime createdAt;
+    private String decisionHorario;
+
+    public String getDecisionHorario() {
+        return decisionHorario;
+    }
+
+    public void setDecisionHorario(String decisionHorario) {
+        this.decisionHorario = decisionHorario;
+    }
 
     public CitaClienteDTO() {
     }

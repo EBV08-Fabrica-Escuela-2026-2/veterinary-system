@@ -31,6 +31,7 @@ import com.veterinaria.repository.VeterinarioRepository;
 import com.veterinaria.service.CitaService;
 import com.veterinaria.service.VeterinarioPortalService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +41,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/veterinario-portal")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Portal del veterinario", description = "API del veterinario autenticado: perfil, agenda y disponibilidad")
 public class VeterinarioPortalController {
 
@@ -70,8 +72,9 @@ public class VeterinarioPortalController {
             @Valid @RequestBody CancelacionVeterinarioDTO solicitud,
             Authentication authentication) {
         Veterinario veterinario = obtenerVeterinario(authentication);
-        return ResponseEntity.ok(citaService.cancelarCitaPorVeterinario(
-                idCita, veterinario.getId(), solicitud.getMotivo()));
+        return ResponseEntity.ok(citaService.cancelarCitaPorProfesional(
+                idCita, veterinario.getId(), veterinario.getCorreo(),
+                solicitud.getMotivo(), solicitud.getDecisionHorario()));
     }
 
     @PatchMapping("/citas/{idCita}/estado")
